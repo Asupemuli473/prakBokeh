@@ -26,10 +26,20 @@ class TriMeshPlot(Plot):
         self.logger = logger
         self.renderer = renderer
         self.xrData = xrData
+        self.dataUpdate = True
+
+        self.useFixColoring = False
+        self.fixColoringMin = None
+        self.fixColoringMax = None
+
+        self.cSymmetric= False
+        self.cLogZ = False
+
+        self.cLevels = 0
 
         self.loadMesh(xrData)
 
-    def getPlotObject(self, variable, title, cm="Magma", aggDim="None", aggFn="None", showCoastline=True):
+    def getPlotObject(self, variable, title, cm="Magma", aggDim="None", aggFn="None", showCoastline=True, useFixColoring=False, fixColoringMin=None, fixColoringMax=None, cSymmetric=False, cLogZ=False, cLevels=0, dataUpdate=True):
         """
         Function that builds up a plot object for Bokeh to display
         Returns:
@@ -39,6 +49,16 @@ class TriMeshPlot(Plot):
         self.aggDim = aggDim
         self.aggFn = aggFn
         self.showCoastline = showCoastline
+        self.useFixColoring = useFixColoring
+        self.fixColoringMin = fixColoringMin
+        self.fixColoringMax = fixColoringMax
+
+        self.cSymmetric = cSymmetric
+        self.cLogZ = cLogZ
+
+        self.cLevels = cLevels
+
+        self.dataUpdate = dataUpdate
 
         if cm != "None":
             self.cm = cm
@@ -68,17 +88,43 @@ class TriMeshPlot(Plot):
         if len(self.freeDims) > 0:
             self.logger.info("Show with DynamicMap")
             dm = hv.DynamicMap(self.buildTrimesh, kdims=self.freeDims).redim.range(**ranges)
-            if self.showCoastline == True:
-                return self.renderer.get_widget((rasterize(dm).opts(**rasterizedgraphopts) * coastln).opts(**totalgraphopts),'widgets')
-            else:
-                return self.renderer.get_widget((rasterize(dm).opts(**rasterizedgraphopts)).opts(**totalgraphopts), 'widgets')
         else:
+            # This is needed as DynamicMap is not working with an empty kdims array.
             self.logger.info("Show without DynamicMap")
             dm = self.buildTrimesh()
-            if self.showCoastline == True:
-                return self.renderer.get_plot((rasterize(dm).opts(**rasterizedgraphopts) * coastln).opts(**totalgraphopts))
+
+        self.logger.info("Checking for coloring mode...")
+        try:
+            if self.useFixColoring is True and self.fixColoringMin is not None and self.fixColoringMax is not None:
+                self.logger.info("Use fixed coloring with %f to %f" % (self.fixColoringMin, self.fixColoringMax))
+                preGraph = rasterize(dm).opts(**rasterizedgraphopts).opts(symmetric=self.cSymmetric,logz=self.cLogZ,color_levels=self.cLevels,clim=(self.fixColoringMin, self.fixColoringMax))
+            elif self.useFixColoring is True:
+                # Calculate min and max values:
+                maxValue = getattr(self.xrData, self.variable).max(dim=getattr(self.xrData,self.variable).dims)
+                minValue = getattr(self.xrData, self.variable).min(dim=getattr(self.xrData,self.variable).dims)
+                self.logger.info("Use fixed coloring with calculated min (%f) and max(%f)" % ( minValue, maxValue))
+                preGraph = rasterize(dm).opts(**rasterizedgraphopts).opts(symmetric=self.cSymmetric,logz=self.cLogZ,color_levels=self.cLevels,clim=(float(minValue), float(maxValue)))
             else:
-                return self.renderer.get_plot((rasterize(dm).opts(**rasterizedgraphopts)).opts(**totalgraphopts))
+                self.logger.info("Use no fixed coloring")
+                preGraph = rasterize(dm).opts(**rasterizedgraphopts).opts(symmetric=self.cSymmetric,logz=self.cLogZ,color_levels=self.cLevels)
+        except Exception as e:
+            print(e)
+
+
+
+
+        if self.showCoastline == True:
+            graph = preGraph * coastln
+        else:
+            graph = preGraph
+        graph = graph.opts(**totalgraphopts)
+
+
+        if len(self.freeDims) > 0:
+            return self.renderer.get_widget(graph.opts(**totalgraphopts),'widgets')
+        else:
+            return self.renderer.get_plot(graph.opts(**totalgraphopts))
+
 
 
     def buildTrimesh(self, *args):
@@ -89,27 +135,26 @@ class TriMeshPlot(Plot):
         Returns:
             The TriMesh-Graph object
         """
+        if self.dataUpdate == True:
+            selectors = self.buildSelectors(args)
+            self.logger.info("Selectors: " + str(selectors))
 
-        selectors = self.buildSelectors(args)
-        self.logger.info("Selectors: " + str(selectors))
-
-        if self.aggDim == "None" or self.aggFn == "None":
-            self.logger.info("No aggregation")
-            self.tris["var"] = getattr(self.xrData, self.variable).isel(selectors)
-        else:
-            if self.aggFn == "mean":
-                self.logger.info("mean aggregation with %s" % self.aggDim)
-                self.tris["var"] = getattr(self.xrData, self.variable).mean(dim=self.aggDim).isel(selectors)
-            elif self.aggFn == "sum":
-                self.logger.info("sum aggregation %s" % self.aggDim)
-                self.tris["var"] = getattr(self.xrData, self.variable).sum(dim=self.aggDim).isel(selectors)
+            if self.aggDim == "None" or self.aggFn == "None":
+                self.logger.info("No aggregation")
+                self.tris["var"] = getattr(self.xrData, self.variable).isel(selectors)
             else:
-                self.logger.error("Unknown Error! AggFn not None, mean, sum")
+                if self.aggFn == "mean":
+                    self.logger.info("mean aggregation with %s" % self.aggDim)
+                    self.tris["var"] = getattr(self.xrData, self.variable).mean(dim=self.aggDim).isel(selectors)
+                elif self.aggFn == "sum":
+                    self.logger.info("sum aggregation %s" % self.aggDim)
+                    self.tris["var"] = getattr(self.xrData, self.variable).sum(dim=self.aggDim).isel(selectors)
+                else:
+                    self.logger.error("Unknown Error! AggFn not None, mean, sum")
 
-
-        # Apply unit
-        factor = 1
-        self.tris["var"] = self.tris["var"] * factor
+            # Apply unit
+            factor = 1
+            self.tris["var"] = self.tris["var"] * factor
 
         res = hv.TriMesh((self.tris,self.verts), label=(self.title) )
         return res

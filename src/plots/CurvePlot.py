@@ -10,7 +10,7 @@ import numpy as np
 from .Plot import Plot
 
 class CurvePlot(Plot):
-    def getPlotObject(self, variable, title, aggDim="None", aggFn="None"):
+    def getPlotObject(self, variable, title, aggDim="None", aggFn="None", logX=False, logY=False,dataUpdate=True):
         """
         Function that builds up a plot object for Bokeh to display
         Returns:
@@ -21,10 +21,20 @@ class CurvePlot(Plot):
         self.aggDim = aggDim
         self.aggFn = aggFn
 
+        self.logX = logX
+        self.logY = logY
+
+        self.dataUpdate = dataUpdate
+
         if self.aggDim == "lat":
             self.cells = []
             for i in range(0,360):
-                self.cells.append(np.loadtxt("dom01/dom01_lon_"+str(i)+"deg.dat",dtype='int16'))
+                self.cells.append((np.loadtxt("dom01/dom01_lon_"+str(i)+"deg.dat",dtype='int16')))
+
+            self.cells = [getattr(self.xrData, self.variable).isel(ncells=self.cells[i]) for i in range(0, 360)]
+            self.logger.info("Loaded dom files!")
+
+
 
         # Builds up the free and non-free dimensions array
         self.buildDims()
@@ -36,7 +46,7 @@ class CurvePlot(Plot):
         # TODO do not hardcode the sizes
         totalgraphopts = {"height": 150, "width": 300}
         dm = hv.DynamicMap(self.buildCurvePlot, kdims=self.freeDims).redim.range(**ranges)
-
+        self.logger.info("Build into Dynamic Map")
         return self.renderer.get_widget(dm.opts(**totalgraphopts),'widgets')
 
     def buildCurvePlot(self, *args):
@@ -59,26 +69,22 @@ class CurvePlot(Plot):
         #    dat = getattr(self.xrData, self.variable).isel(selectors)
         #    dat = dat.sum(aggDim)
 
+        if self.dataUpdate == True:
+            self.logger.info("Loading data")
 
-        if self.aggDim == "lat" and self.aggFn == "mean":
-            dat = [getattr(self.xrData, self.variable).isel(**selectors, ncells=self.cells[i]).mean() for i in range(0,360)]
-        elif self.addDim == "lat" and self.aggFn == "sum":
-            dat = [getattr(self.xrData, self.variable).isel(**selectors, ncells=self.cells[i]).sum() for i in range(0,360)]
+            # PERFORMANCE: Not optimal. Load cells via isel only one time should be faster
+            if self.aggDim == "lat" and self.aggFn == "mean":
+                self.dat = [self.cells[i].isel(**selectors).mean() for i in range(0,360)]
+            elif self.aggDim == "lat" and self.aggFn == "sum":
+                self.dat = [self.cells[i].isel(**selectors).sum() for i in range(0,360)]
 
-        #if self.aggDim == "lat":
-        #    dat = []
-        #    for i in range(0,360):
-        #        selectors["ncells"] = self.cells[i]
-        #        if self.aggFn == "mean":
-        #            dat.append(getattr(self.xrData, self.variable).isel(selectors).mean())
-        #        if self.aggFn == "sum":
-        #            dat.append(getattr(self.xrData, self.variable).isel(selectors).sum())
+            self.logger.info("Loaded data")
 
         # TODO Apply unit
         #factor = 1
         #dat = dat * factor
 
         # TODO Height hardcoded
-        res = hv.Curve(dat, label=self.title).opts(xlabel=self.aggDim, ylabel=self.variable)
+        res = hv.Curve(self.dat, label=self.title).opts(xlabel="Longitude", ylabel=self.variable, logy=self.logY, logx=self.logX)
 
         return res
