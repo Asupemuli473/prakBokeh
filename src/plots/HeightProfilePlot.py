@@ -53,6 +53,7 @@ class HeightProfilePlot(Plot):
         # TODO do not hardcode the sizes
         totalgraphopts = {"height": 150, "width": 300}
 
+        print(self.freeDims)
         self.freeDims.remove("hi")
         if len(self.freeDims) > 0:
             self.logger.info("Show with DynamicMap")

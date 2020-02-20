@@ -6,6 +6,7 @@ import xarray as xr
 import holoviews as hv
 import numpy as np
 
+import helloworld_pb2
 
 from .Plot import Plot
 
@@ -26,7 +27,7 @@ class CurvePlot(Plot):
 
         self.dataUpdate = dataUpdate
 
-        if self.aggDim == "lat":
+        if self.aggDim == "lat" and self.xrData != None:
             self.cells = []
             for i in range(0,360):
                 self.cells.append((np.loadtxt("dom01/dom01_lon_"+str(i)+"deg.dat",dtype='int16')))
@@ -58,6 +59,7 @@ class CurvePlot(Plot):
             The Curve-Graph object
         """
 
+        print(args)
         selectors = self.buildSelectors(args)
 
         # This part is not needed as a TriMeshGraph is drawn instead
@@ -72,12 +74,17 @@ class CurvePlot(Plot):
         if self.dataUpdate == True:
             self.logger.info("Loading data")
 
-            # PERFORMANCE: Not optimal. Load cells via isel only one time should be faster
-            if self.aggDim == "lat" and self.aggFn == "mean":
-                self.dat = [self.cells[i].isel(**selectors).mean() for i in range(0,360)]
-            elif self.aggDim == "lat" and self.aggFn == "sum":
-                self.dat = [self.cells[i].isel(**selectors).sum() for i in range(0,360)]
-
+            # # PERFORMANCE: Not optimal. Load cells via isel only one time should be faster
+            if self.loadViaGrpc == False:
+                if self.aggDim == "lat" and self.aggFn == "mean":
+                    self.dat = [self.cells[i].isel(**selectors).mean() for i in range(0,360)]
+                elif self.aggDim == "lat" and self.aggFn == "sum":
+                    self.dat = [self.cells[i].isel(**selectors).sum() for i in range(0,360)]
+            else:
+                if self.aggDim == "lat" and self.aggFn == "mean":
+                    self.dat = self.stub.GetAggValuesPerLon(helloworld_pb2.AggValuesPerLonRequest(filename="test.nc", variable=self.variable, alt=int(selectors['alt']), dom=0, aggregateFunction=0)).data
+                elif self.aggDim == "lat" and self.aggFn == "sum":
+                    self.dat = self.stub.GetAggValuesPerLon(helloworld_pb2.AggValuesPerLonRequest(filename="test.nc", variable=self.variable, alt=int(selectors['alt']), dom=0, aggregateFunction=1)).data     
             self.logger.info("Loaded data")
 
         # TODO Apply unit
@@ -85,6 +92,6 @@ class CurvePlot(Plot):
         #dat = dat * factor
 
         # TODO Height hardcoded
-        res = hv.Curve(self.dat, label=self.title).opts(xlabel="Longitude", ylabel=self.variable, logy=self.logY, logx=self.logX)
+        res = hv.Curve(self.dat, label=self.title).opts(xlabel="Longitude", ylabel=self.variable, logy=self.logY, logx=self.logX) # Todo agg function parameter
 
         return res

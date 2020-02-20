@@ -16,10 +16,21 @@ from holoviews.operation.datashader import rasterize
 
 import math
 
+import grpc                     
+import helloworld_pb2
+import helloworld_pb2_grpc
+
+
 from .Plot import Plot
 
+import time
+
+
+MAX_MESSAGE_LENGTH = 16000000
+current_milli_time = lambda: int(round(time.time() * 1000))
+
 class TriMeshPlot(Plot):
-    def __init__(self, logger, renderer, xrData):
+    def __init__(self, logger, renderer, xrData, loadViaGrpc):
         """
         Overwrites Plot.__init__
         """
@@ -37,7 +48,20 @@ class TriMeshPlot(Plot):
 
         self.cLevels = 0
 
+        self.loadViaGrpc = loadViaGrpc
+        if self.loadViaGrpc:
+            channel = grpc.insecure_channel(
+                '0.0.0.0:50051',
+                options=[
+                    ('grpc.max_send_message_length', MAX_MESSAGE_LENGTH),
+                    ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
+                ]
+            )
+            self.stub = helloworld_pb2_grpc.GreeterStub(channel)
+        else:
+            self.stub = None;
         self.loadMesh(xrData)
+
 
     def getPlotObject(self, variable, title, cm="Magma", aggDim="None", aggFn="None", showCoastline=True, useFixColoring=False, fixColoringMin=None, fixColoringMax=None, cSymmetric=False, cLogZ=False, cLevels=0, dataUpdate=True):
         """
@@ -141,20 +165,30 @@ class TriMeshPlot(Plot):
 
             if self.aggDim == "None" or self.aggFn == "None":
                 self.logger.info("No aggregation")
-                self.tris["var"] = getattr(self.xrData, self.variable).isel(selectors)
+                if self.loadViaGrpc:
+                    self.tris["var"] = self.stub.GetTris(helloworld_pb2.TrisRequest(filename="test.nc", variable=self.variable, alt=selectors['alt'])).data
+                else:
+                    self.tris["var"] = getattr(self.xrData, self.variable).isel(selectors)
             else:
                 if self.aggFn == "mean":
                     self.logger.info("mean aggregation with %s" % self.aggDim)
-                    self.tris["var"] = getattr(self.xrData, self.variable).mean(dim=self.aggDim).isel(selectors)
+                    if self.loadViaGrpc:
+                        self.tris["var"] = self.stub.GetTrisAgg(helloworld_pb2.TrisAggRequest(filename="test.nc", variable=self.variable, aggregateFunction=0)).data
+                    else:
+                        self.tris["var"] = getattr(self.xrData, self.variable).mean(dim=self.aggDim).isel(selectors)
                 elif self.aggFn == "sum":
                     self.logger.info("sum aggregation %s" % self.aggDim)
-                    self.tris["var"] = getattr(self.xrData, self.variable).sum(dim=self.aggDim).isel(selectors)
+                    if self.loadViaGrpc:
+                        self.tris["var"] = self.stub.GetTrisAgg(helloworld_pb2.TrisAggRequest(filename="test.nc", variable=self.variable, aggregateFunction=1)).data
+                    else:
+                        self.tris["var"] = getattr(self.xrData, self.variable).mean(dim=self.aggDim).isel(selectors)
                 else:
                     self.logger.error("Unknown Error! AggFn not None, mean, sum")
 
             # Apply unit
             factor = 1
             self.tris["var"] = self.tris["var"] * factor
+            print(self.tris["var"][:10])
 
         res = hv.TriMesh((self.tris,self.verts), label=(self.title) )
         return res
@@ -166,24 +200,31 @@ class TriMeshPlot(Plot):
         Returns:
             array of triangles and vertices: Builds the mesh from the loaded xrData
         """
-        try:
-            # If only one file is loaded has no attribute time, so we have to check this
-            if hasattr(xrData.clon_bnds, "time"):
-                # isel time to 0, as by globbing the clon_bnds array could have multiple times
-                verts = np.column_stack((xrData.clon_bnds.isel(time=0).stack(z=('vertices', 'ncells')),
-                                         xrData.clat_bnds.isel(time=0).stack(z=('vertices', 'ncells'))))
-            else:
-                verts = np.column_stack((xrData.clon_bnds.isel().stack(z=('vertices', 'ncells')),
-                                         xrData.clat_bnds.isel().stack(z=('vertices', 'ncells'))))
-        except:
-            self.logger.error("Failed to build loadMesh():verts!")
+        verts = None
+        if self.loadViaGrpc == False:
+            try:
+                # If only one file is loaded has no attribute time, so we have to check this
+                if hasattr(xrData.clon_bnds, "time"):
+                    # isel time to 0, as by globbing the clon_bnds array could have multiple times
+                    verts = np.column_stack((xrData.clon_bnds.isel(time=0).stack(z=('vertices', 'ncells')),
+                                             xrData.clat_bnds.isel(time=0).stack(z=('vertices', 'ncells'))))
+                else:
+                    verts = np.column_stack((xrData.clon_bnds.isel().stack(z=('vertices', 'ncells')),
+                                             xrData.clat_bnds.isel().stack(z=('vertices', 'ncells'))))
+            except:
+                self.logger.error("Failed to build loadMesh():verts!")
 
-        # Calc degrees from radians
-        f = 180 / math.pi
-        for v in verts:
-            v[0] = v[0] * f
-            v[1] = v[1] * f
-
+            # Calc degrees from radians
+            f = 180 / math.pi
+            for v in verts:
+                v[0] = v[0] * f
+                v[1] = v[1] * f
+        else:
+            start = current_milli_time()
+            response = self.stub.GetMesh(helloworld_pb2.MeshRequest(filename="test.nc"))
+            end = current_milli_time()
+            self.logger.info("response took %f" % ((end - start) / 1000))
+            verts = np.column_stack((response.lons, response.lats))
         # If only one file is loaded has no attribute time, so we have to check this
         if hasattr(xrData.clon_bnds, "time"):
             # isel time to 0, as by globbing the clon_bnds array could have multiple times
@@ -212,4 +253,3 @@ class TriMeshPlot(Plot):
 
         self.tris = tris
         self.verts = verts
-

@@ -1,11 +1,22 @@
 #!/usr/bin/python
+import grpc
+
+import helloworld_pb2
+import helloworld_pb2_grpc
+
 
 class Plot:
-    def __init__(self, logger, renderer, xrData):
+    def __init__(self, logger, renderer, xrData, loadViaGrpc):
         self.logger = logger
         self.renderer = renderer
         self.xrData = xrData
-
+        self.loadViaGrpc = loadViaGrpc
+        if self.loadViaGrpc:
+            channel = grpc.insecure_channel('0.0.0.0:50051')
+            self.stub = helloworld_pb2_grpc.GreeterStub(channel)
+        else:
+            self.stub = None;
+        assert self.xrData != None
 
     def buildDims(self):
         """
@@ -15,6 +26,7 @@ class Plot:
         """
         self.freeDims = []
         self.nonFreeDims = []
+
         for d in getattr(self.xrData,self.variable).dims:
 
             # Skip aggregated dimensions only it a Aggregate-Function is specified

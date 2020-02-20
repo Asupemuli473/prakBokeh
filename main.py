@@ -34,9 +34,9 @@ logger = logging.getLogger('ncview2')
 logger.info({i.__name__:i.__version__ for i in [hv, np, pd]})
 
 
-#defaultinput = "http://eos.scc.kit.edu/thredds/dodsC/polstracc0new/2016033000/2016033000-ART-passive_grid_pmn_DOM01_ML_0002.nc"
+defaultinput = "http://eos.scc.kit.edu/thredds/dodsC/localpolstracc/2016020100/2016020100-ART-chemtracer_grid_DOM01_HL_0018.nc"
 #defaultinput = "eos.scc.kit.edu"
-defaultinput = "/home/max/Downloads/Test/2016033000/2016033000-ART-passive_grid_pmn_DOM01_ML_0002.nc"
+#defaultinput = "/home/tom/Documents/nc_files/test.nc"
 
 urlinput = TextInput(value=defaultinput, title="netCDF file -OR- OPeNDAP URL:")
 slVar = None
@@ -61,6 +61,7 @@ cuPlot = None
 hpPlot = None
 xrData = None
 xrDataMeta = None
+loadViaGrpc = False
 
 class Aggregates():
     def __init__(self, dim, f):
@@ -88,10 +89,11 @@ def loadData(url):
     Returns:
         xarray Dataset: Loads the url as xarray Dataset
     """
+    assert loadViaGrpc == False;
     start = time.time()
     # As issue: https://github.com/pydata/xarray/issues/1385 writes, open_mfdata is much slower. Opening the
     # same file and preparing it for the curve graph is taking minutes with open_mfdataset, but seconds with open_dataset
-    if '*' in url or isinstance(url,list):
+    if '*' in url or isinstance(url,list): # TODO deal with multiple files
         logger.info("Loading with open_mfdataset")
         xrData = xr.open_mfdataset(url,decode_cf=False,decode_times=False)
     else:
@@ -109,12 +111,15 @@ def loadDataMeta(url):
         xarray Dataset: Loads the url as xarray Dataset
     """
     start = time.time()
+    global loadViaGrpc
     # As issue: https://github.com/pydata/xarray/issues/1385 writes, open_mfdata is much slower. Opening the
     # same file and preparing it for the curve graph is taking minutes with open_mfdataset, but seconds with open_dataset
     if '*' in url or isinstance(url,list):
         logger.info("Loading with open_mfdataset")
         xrData = xr.open_mfdataset(url,decode_cf=False,decode_times=False, chunks={})
     else:
+        if url[:4] == 'http':
+            loadViaGrpc = True
         logger.info("Loading with open_data")
         xrData = xr.open_dataset(url, decode_cf=False, decode_times=False, chunks={})
     end = time.time()
@@ -240,6 +245,7 @@ def mainDialog(dataUpdate=True):
     global slVar, slCMap, txTitle, slAggregateFunction, slAggregateDimension, cbCoastlineOverlay, cbColoring, cbAxis
     global tmPlot, cuPlot, hpPlot
     global xrData, xrDataMeta
+    global loadViaGrpc
     global txFixColoringMin, txFixColoringMax, txCLevels
     try:
         start = time.time()
@@ -342,8 +348,10 @@ def mainDialog(dataUpdate=True):
         curdoc().add_root(l)
 
         # Choose if a Curve or TriMesh is to be used
+        # aggDim = "heightProfile"
+        # aggFn = "mean"
         if aggDim == "lat" and aggFn != "None":
-            if xrData is None:
+            if xrData is None and loadViaGrpc == False:
                 logger.info("Loading unchunked data for curveplot")
                 try:
                     url = getURL()
@@ -353,11 +361,14 @@ def mainDialog(dataUpdate=True):
                     logger.error("Error for loading unchunked data.")
             if cuPlot is None:
                 logger.info("Build CurvePlot")
-                cuPlot = CurvePlot(logger, renderer, xrData)
+                if loadViaGrpc:
+                    cuPlot = CurvePlot(logger, renderer, xrDataMeta, loadViaGrpc)
+                else:
+                    cuPlot = CurvePlot(logger, renderer, xrData, loadViaGrpc)
             plot = cuPlot.getPlotObject(variable=variable,title=title,aggDim=aggDim,aggFn=aggFn,logX=logX, logY=logY,dataUpdate=dataUpdate)
             logger.info("Returned plot")
         elif aggDim == "heightProfile" and aggFn != "None":
-            if xrData is None:
+            if xrData is None and loadViaGrpc == False:
                 logger.info("Loading unchunked data for curveplot")
                 try:
                     url = getURL()
@@ -367,14 +378,17 @@ def mainDialog(dataUpdate=True):
                     logger.error("Error for loading unchunked data.")
             if hpPlot is None:
                 logger.info("Build HeightProfilePlot")
-                hpPlot = HeightProfilePlot(logger, renderer, xrData)
+                hpPlot = HeightProfilePlot(logger, renderer, xrData, loadViaGrpc)
             plot = hpPlot.getPlotObject(variable=variable, title=title,aggDim=aggDim,aggFn=aggFn,cm=cm,cSymmetric=cSymmetric,cLogZ=cLogZ,cLevels=cLevels,dataUpdate=dataUpdate)
             logger.info("Returned plot")
         else:
             if tmPlot is None:
                 logger.info("Build TriMeshPlot")
-                tmPlot = TriMeshPlot(logger, renderer, xrDataMeta)
-
+                if loadViaGrpc:
+                    tmPlot = TriMeshPlot(logger, renderer, xrDataMeta, True)
+                else:
+                    tmPlot = TriMeshPlot(logger, renderer, xrDataMeta, False)                
+                
             plot = tmPlot.getPlotObject(variable=variable,title=title,cm=cm,aggDim=aggDim,aggFn=aggFn, showCoastline=showCoastline, useFixColoring=useFixColoring, fixColoringMin=fixColorMin, fixColoringMax=fixColorMax,cSymmetric=cSymmetric,cLogZ=cLogZ,cLevels=cLevels,dataUpdate=dataUpdate)
 
         curdoc().clear()
