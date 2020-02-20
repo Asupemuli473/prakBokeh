@@ -6,6 +6,7 @@ import xarray as xr
 import holoviews as hv
 import numpy as np
 
+import nc_pb2
 
 from .Plot import Plot
 
@@ -37,11 +38,12 @@ class HeightProfilePlot(Plot):
         self.dataUpdate = dataUpdate
 
         # Dirty! Fix this TODO
-        if self.aggDim == "heightProfile":
-            self.cells = []
-            for i in range(0,360):
-                self.cells.append(np.loadtxt("dom01/dom01_lon_"+str(i)+"deg.dat",dtype='int16'))
-            self.logger.info("Loaded dom files!")
+        if self.loadViaGrpc == False:
+            if self.aggDim == "heightProfile":
+                self.cells = []
+                for i in range(0,360):
+                    self.cells.append(np.loadtxt("dom01/dom01_lon_"+str(i)+"deg.dat",dtype='int16'))
+                self.logger.info("Loaded dom files!")
 
         # Builds up the free and non-free dimensions array
         self.buildDims()
@@ -54,7 +56,8 @@ class HeightProfilePlot(Plot):
         totalgraphopts = {"height": 150, "width": 300}
 
         print(self.freeDims)
-        self.freeDims.remove("hi")
+        if "hi" in self.freeDims:
+            self.freeDims.remove("hi")
         if len(self.freeDims) > 0:
             self.logger.info("Show with DynamicMap")
             dm = hv.DynamicMap(self.buildHeightProfilePlot, kdims=self.freeDims).redim.range(**ranges)
@@ -79,12 +82,21 @@ class HeightProfilePlot(Plot):
 
         # PERFORMANCE: Not optimal. Load cells via isel only one time should be faster
         if self.dataUpdate == True:
-            if self.aggFn == "mean":
-                self.dat = [[getattr(self.xrData, self.variable).isel(**selectors, height=h, ncells=self.cells[i]).mean() for i in range(0,360)] for h in range(0,90)]
-            elif self.aggFn == "sum":
-                self.dat = [[getattr(self.xrData, self.variable).isel(**selectors, height=h, ncells=self.cells[i]).sum() for i in range(0,360)] for h in range(0,90)]
-
-
+            if self.loadViaGrpc == False:
+                if self.aggFn == "mean":
+                    self.dat = [[getattr(self.xrData, self.variable).isel(**selectors, height=h, ncells=self.cells[i]).mean() for i in range(0,360)] for h in range(0,90)]
+                elif self.aggFn == "sum":
+                    self.dat = [[getattr(self.xrData, self.variable).isel(**selectors, height=h, ncells=self.cells[i]).sum() for i in range(0,360)] for h in range(0,90)]
+            else:
+                reponse = 0;
+                if self.aggFn == "mean":
+                    response = self.stub.GetHeightProfile(nc_pb2.HeightProfileRequest(filename="1.nc", variable=self.variable, dom=0, aggregateFunction=0))     
+                elif self.aggFn == "sum":
+                    response = self.stub.GetHeightProfile(nc_pb2.HeightProfileRequest(filename="1.nc", variable=self.variable, dom=0, aggregateFunction=1))
+                self.dat = [response.result[i].data for i in range(0,90)]
+                    
+                print(response)
+                    
         # TODO Apply unit
         #factor = 1
         #dat = dat * factor
@@ -92,4 +104,6 @@ class HeightProfilePlot(Plot):
         # TODO Dimensions hardcoded
         res = hv.Image((range(360), range(90), self.dat), datatype=['grid'], label=self.title).opts(xlabel="Longitude", ylabel="height",cmap=self.cm,symmetric=self.cSymmetric,logz=self.cLogZ,color_levels=self.cLevels,colorbar=True)
 
+        print(self.dat[0][:10])
+        
         return res

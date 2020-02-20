@@ -21,7 +21,9 @@ option objc_class_prefix = "NC";
 
 package nc;
 
-service NC {
+service NCService {
+  rpc GetHeightProfile (HeightProfileRequest) returns (HeightProfileReply) {}
+    
   rpc GetAggValuesPerLon (AggValuesPerLonRequest) returns (AggValuesPerLonReply) {}
 
   rpc GetMesh (MeshRequest) returns (MeshReply) {}
@@ -78,4 +80,27 @@ message TrisAggRequest {
 	SUM = 1;
     }
     Op aggregateFunction = 3;
+}
+
+message HeightProfileRequest {
+    string filename = 1;
+    string variable = 2;
+    enum DOM {
+	DOM01 = 0;
+	DOM02 = 1;
+    }
+    DOM dom = 3;
+    enum Op {
+	MEAN = 0;
+	SUM = 1;
+    }
+    Op aggregateFunction = 4;
+}
+
+message HeightProfileReply {
+    repeated PerHeightData result = 1;
+}
+
+message PerHeightData {
+    repeated float data = 1;
 }

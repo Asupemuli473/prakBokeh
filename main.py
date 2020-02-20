@@ -368,7 +368,7 @@ def mainDialog(dataUpdate=True):
             plot = cuPlot.getPlotObject(variable=variable,title=title,aggDim=aggDim,aggFn=aggFn,logX=logX, logY=logY,dataUpdate=dataUpdate)
             logger.info("Returned plot")
         elif aggDim == "heightProfile" and aggFn != "None":
-            if xrData is None and loadViaGrpc == False:
+            if xrData is None  and loadViaGrpc == False:
                 logger.info("Loading unchunked data for curveplot")
                 try:
                     url = getURL()
@@ -378,7 +378,10 @@ def mainDialog(dataUpdate=True):
                     logger.error("Error for loading unchunked data.")
             if hpPlot is None:
                 logger.info("Build HeightProfilePlot")
-                hpPlot = HeightProfilePlot(logger, renderer, xrData, loadViaGrpc)
+                if loadViaGrpc:
+                    hpPlot = HeightProfilePlot(logger, renderer, xrDataMeta, True)
+                else:
+                    hpPlot = HeightProfilePlot(logger, renderer, xrData, False)
             plot = hpPlot.getPlotObject(variable=variable, title=title,aggDim=aggDim,aggFn=aggFn,cm=cm,cSymmetric=cSymmetric,cLogZ=cLogZ,cLevels=cLevels,dataUpdate=dataUpdate)
             logger.info("Returned plot")
         else:

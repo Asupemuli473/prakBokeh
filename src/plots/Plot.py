@@ -1,8 +1,8 @@
 #!/usr/bin/python
 import grpc
 
-import helloworld_pb2
-import helloworld_pb2_grpc
+import nc_pb2
+import nc_pb2_grpc
 
 
 class Plot:
@@ -13,7 +13,7 @@ class Plot:
         self.loadViaGrpc = loadViaGrpc
         if self.loadViaGrpc:
             channel = grpc.insecure_channel('0.0.0.0:50051')
-            self.stub = helloworld_pb2_grpc.GreeterStub(channel)
+            self.stub = nc_pb2_grpc.NCServiceStub(channel)
         else:
             self.stub = None;
         assert self.xrData != None

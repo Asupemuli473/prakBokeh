@@ -20,7 +20,7 @@ CXX = g++
 CPPFLAGS += `pkg-config --cflags protobuf grpc`
 CXXFLAGS += -std=c++11 -Wall -Wextra
 ifeq ($(SYSTEM),Darwin)
-LDFLAGS += -L/usr/local/lib `pkg-config --libs protobuf grpc++ grpc libcurl netcdf-cxx4`\
+LDFLAGS += -L/usr/local/lib `pkg-config --libs protobuf grpc grpc++ libcurl netcdf netcdf-cxx4`\
            -lgrpc++_reflection\
            -ldl
 else
@@ -33,7 +33,7 @@ PROTOC = protoc
 GRPC_CPP_PLUGIN = grpc_cpp_plugin
 GRPC_CPP_PLUGIN_PATH ?= `which $(GRPC_CPP_PLUGIN)`
 
-PROTOS_PATH = ./protos
+PROTOS_PATH = ../..
 
 vpath %.proto $(PROTOS_PATH)
 

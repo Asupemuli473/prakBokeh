@@ -20,6 +20,7 @@
 #define NVERTICES 3
 #define NMESH 983040
 #define NALT 66
+#define NHEIGHT 90
 #define PI 3.14159
 #include <iostream>
 #include <fstream>
@@ -96,6 +97,52 @@ public:
 	std::cout << "Server initialization complete" << std::endl;
     }
 
+    Status GetHeightProfile (ServerContext* context, const nc::HeightProfileRequest* request,
+			     nc::HeightProfileReply* reply) override {
+	netCDF::NcFile ncFile;
+	try {
+	    std::cout <<  "Trying to open " << request->filename() << std::endl;
+	    ncFile.open(request->filename(), netCDF::NcFile::read);
+	} catch(netCDF::exceptions::NcException &e) {
+	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
+	}
+
+	std::vector<int>* cellToLatLookup = request->dom() == nc::HeightProfileRequest_DOM_DOM01 ? &cellToLatLookupDOM01 : &cellToLatLookupDOM02;
+	std::vector<int>* latCountLookup = request->dom() == nc::HeightProfileRequest_DOM_DOM01 ? &latCountDOM01 : &latCountDOM02;
+    
+	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
+
+	for(int i = 0; i<NHEIGHT; ++i){
+	    auto hd = reply->add_result();
+	    
+	    // 3 dimensions
+	    std::vector<size_t> start(3);
+	    start[1] = i; // height
+	    std::vector<size_t> count(3);
+	    count[0] = 1;
+	    count[1] = 1;
+	    count[2] = NCELLS;
+    
+	    std::vector<float> values(NCELLS);
+	    var.getVar(start,count,&values[0]);
+	
+	    std::vector<float> data(NLATS);
+
+	    for(int i = 0; i < NCELLS; ++i){
+		data[(*cellToLatLookup)[i]] += values[i];
+	    }
+
+	    for(int i = 0; i < NLATS; ++i){
+		auto val = nc::HeightProfileRequest_Op_MEAN == request->aggregatefunction() ? data[i] / (*latCountLookup)[i] : data[i];
+		hd->add_data(val);
+	    }
+	}
+    
+	ncFile.close();
+	return Status::OK;
+    }
+    
+    
     Status GetAggValuesPerLon(ServerContext* context, const AggValuesPerLonRequest* request,
 		    AggValuesPerLonReply* reply) override {
 	std::cout << "GetAggValuesPerLon called" << std::endl;
@@ -218,7 +265,7 @@ public:
 	return Status::OK;
     }
 
-        Status GetTrisAgg(ServerContext* context, const TrisAggRequest* request,
+    Status GetTrisAgg(ServerContext* context, const TrisAggRequest* request,
 		   TrisReply* reply) override {
 	std::cout << "GetTrisMean called" << std::endl;
 	netCDF::NcFile ncFile;

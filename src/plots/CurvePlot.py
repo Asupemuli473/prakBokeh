@@ -6,7 +6,7 @@ import xarray as xr
 import holoviews as hv
 import numpy as np
 
-import helloworld_pb2
+import nc_pb2
 
 from .Plot import Plot
 
@@ -82,9 +82,9 @@ class CurvePlot(Plot):
                     self.dat = [self.cells[i].isel(**selectors).sum() for i in range(0,360)]
             else:
                 if self.aggDim == "lat" and self.aggFn == "mean":
-                    self.dat = self.stub.GetAggValuesPerLon(helloworld_pb2.AggValuesPerLonRequest(filename="test.nc", variable=self.variable, alt=int(selectors['alt']), dom=0, aggregateFunction=0)).data
+                    self.dat = self.stub.GetAggValuesPerLon(nc_pb2.AggValuesPerLonRequest(filename="test.nc", variable=self.variable, alt=int(selectors['alt']), dom=0, aggregateFunction=0)).data
                 elif self.aggDim == "lat" and self.aggFn == "sum":
-                    self.dat = self.stub.GetAggValuesPerLon(helloworld_pb2.AggValuesPerLonRequest(filename="test.nc", variable=self.variable, alt=int(selectors['alt']), dom=0, aggregateFunction=1)).data     
+                    self.dat = self.stub.GetAggValuesPerLon(nc_pb2.AggValuesPerLonRequest(filename="test.nc", variable=self.variable, alt=int(selectors['alt']), dom=0, aggregateFunction=1)).data     
             self.logger.info("Loaded data")
 
         # TODO Apply unit

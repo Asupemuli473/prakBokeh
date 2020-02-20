@@ -17,8 +17,8 @@ from holoviews.operation.datashader import rasterize
 import math
 
 import grpc                     
-import helloworld_pb2
-import helloworld_pb2_grpc
+import nc_pb2
+import nc_pb2_grpc
 
 
 from .Plot import Plot
@@ -57,7 +57,7 @@ class TriMeshPlot(Plot):
                     ('grpc.max_receive_message_length', MAX_MESSAGE_LENGTH),
                 ]
             )
-            self.stub = helloworld_pb2_grpc.GreeterStub(channel)
+            self.stub = nc_pb2_grpc.NCServiceStub(channel)
         else:
             self.stub = None;
         self.loadMesh(xrData)
@@ -166,20 +166,20 @@ class TriMeshPlot(Plot):
             if self.aggDim == "None" or self.aggFn == "None":
                 self.logger.info("No aggregation")
                 if self.loadViaGrpc:
-                    self.tris["var"] = self.stub.GetTris(helloworld_pb2.TrisRequest(filename="test.nc", variable=self.variable, alt=selectors['alt'])).data
+                    self.tris["var"] = self.stub.GetTris(nc_pb2.TrisRequest(filename="test.nc", variable=self.variable, alt=selectors['alt'])).data
                 else:
                     self.tris["var"] = getattr(self.xrData, self.variable).isel(selectors)
             else:
                 if self.aggFn == "mean":
                     self.logger.info("mean aggregation with %s" % self.aggDim)
                     if self.loadViaGrpc:
-                        self.tris["var"] = self.stub.GetTrisAgg(helloworld_pb2.TrisAggRequest(filename="test.nc", variable=self.variable, aggregateFunction=0)).data
+                        self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename="test.nc", variable=self.variable, aggregateFunction=0)).data
                     else:
                         self.tris["var"] = getattr(self.xrData, self.variable).mean(dim=self.aggDim).isel(selectors)
                 elif self.aggFn == "sum":
                     self.logger.info("sum aggregation %s" % self.aggDim)
                     if self.loadViaGrpc:
-                        self.tris["var"] = self.stub.GetTrisAgg(helloworld_pb2.TrisAggRequest(filename="test.nc", variable=self.variable, aggregateFunction=1)).data
+                        self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename="test.nc", variable=self.variable, aggregateFunction=1)).data
                     else:
                         self.tris["var"] = getattr(self.xrData, self.variable).mean(dim=self.aggDim).isel(selectors)
                 else:
@@ -221,7 +221,7 @@ class TriMeshPlot(Plot):
                 v[1] = v[1] * f
         else:
             start = current_milli_time()
-            response = self.stub.GetMesh(helloworld_pb2.MeshRequest(filename="test.nc"))
+            response = self.stub.GetMesh(nc_pb2.MeshRequest(filename="test.nc"))
             end = current_milli_time()
             self.logger.info("response took %f" % ((end - start) / 1000))
             verts = np.column_stack((response.lons, response.lats))
