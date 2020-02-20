@@ -1,0 +1,81 @@
+// Copyright 2015 gRPC authors.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "grpc.nc";
+option java_outer_classname = "NCProto";
+option objc_class_prefix = "NC";
+
+package nc;
+
+service NC {
+  rpc GetAggValuesPerLon (AggValuesPerLonRequest) returns (AggValuesPerLonReply) {}
+
+  rpc GetMesh (MeshRequest) returns (MeshReply) {}
+
+  rpc GetTris (TrisRequest) returns (TrisReply) {}
+
+  rpc GetTrisAgg (TrisAggRequest) returns (TrisReply) {}
+}
+
+message AggValuesPerLonRequest {
+  enum DOM {
+      DOM01 = 0;
+      DOM02 = 1;
+  }
+  string filename = 1;
+  string variable = 2;
+  sint32 alt = 3;
+  DOM dom = 4;
+  enum Op{
+      MEAN = 0;
+      SUM = 1;
+  }
+  Op aggregateFunction = 5;
+}
+
+message AggValuesPerLonReply {
+    repeated float data = 1;
+}
+
+message MeshRequest {
+  string filename = 1;
+}
+
+message MeshReply {
+  repeated double lons = 1;
+  repeated double lats = 2;
+}
+
+message TrisRequest {
+    string filename = 1;
+    string variable = 2;
+    sint32 alt = 3;
+}
+
+message TrisReply {
+    repeated float data = 1;
+}
+
+message TrisAggRequest {
+    string filename = 1;
+    string variable = 2;
+    enum Op {
+	MEAN = 0;
+	SUM = 1;
+    }
+    Op aggregateFunction = 3;
+}
