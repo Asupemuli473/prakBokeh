@@ -17,11 +17,10 @@
  */
 #define NCELLS 327680
 #define NLATS 360
-#define NVERTICES 3
 #define NMESH 983040
-#define NALT 66
-#define NHEIGHT 90
 #define PI 3.14159
+#define HEIGHT_DIM_INDEX 1
+
 #include <iostream>
 #include <fstream>
 #include <memory>
@@ -111,13 +110,14 @@ public:
 	std::vector<int>* latCountLookup = request->dom() == nc::HeightProfileRequest_DOM_DOM01 ? &latCountDOM01 : &latCountDOM02;
     
 	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
+	auto nheight = var.getDim(HEIGHT_DIM_INDEX).getSize();
 
-	for(int i = 0; i<NHEIGHT; ++i){
+	for(int i = 0; i<nheight; ++i){
 	    auto hd = reply->add_result();
 	    
 	    // 3 dimensions
 	    std::vector<size_t> start(3);
-	    start[1] = i; // height
+	    start[HEIGHT_DIM_INDEX] = i; // height
 	    std::vector<size_t> count(3);
 	    count[0] = 1;
 	    count[1] = 1;
@@ -218,7 +218,6 @@ public:
 	clons.getVar(start,count,&valuesLons[2 * NCELLS]);
 	clats.getVar(start,count,&valuesLats[2 * NCELLS]);
 
-
 	double f = 180 / PI;
 	
 	for(int i = 0; i < NMESH; ++i){
@@ -232,7 +231,7 @@ public:
     }
 
 
-    Status GetTris(ServerContext* context, const TrisRequest* request,
+    Status GetTris (ServerContext* context, const TrisRequest* request,
 		   TrisReply* reply) override {
 	std::cout << "GetTris called" << std::endl;
 	netCDF::NcFile ncFile;
@@ -267,7 +266,7 @@ public:
 
     Status GetTrisAgg(ServerContext* context, const TrisAggRequest* request,
 		   TrisReply* reply) override {
-	std::cout << "GetTrisMean called" << std::endl;
+	std::cout << "GetTrisAgg called" << std::endl;
 	netCDF::NcFile ncFile;
 	try {
 	    std::cout <<  "Trying to open " << request->filename() << std::endl;
@@ -278,25 +277,68 @@ public:
 	}
 
 	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
-
-	std::vector<float> values(NALT);
+	auto nheight = var.getDim(HEIGHT_DIM_INDEX).getSize();
+	
+	std::vector<float> values(nheight);
 	std::vector<size_t> start(3);
 	std::vector<size_t> count(3);
 	count[0] = 1;
-	count[1] = NALT;
+	count[HEIGHT_DIM_INDEX] = nheight;
 	count[2] = 1;
 
 	for(int i = 0; i < NCELLS; ++i){
 	    start[2] = i;
 	    var.getVar(start,count,&values[0]);
-	    auto acc = std::accumulate(values.begin(), values.end(), 0.0) / NALT;
+	    auto acc = std::accumulate(values.begin(), values.end(), 0.0);
 	    if(request->aggregatefunction() == nc::TrisAggRequest_Op_MEAN){
-		acc /= NALT;
+		acc /= nheight;
 	    }
 	    reply->add_data(acc);
 	}
 
-	std::cout << "GetTrisMean ok" << std::endl;
+	std::cout << "GetTrisAgg ok" << std::endl;
+	return Status::OK;
+    }
+
+    Status GetTrisAggStream(ServerContext* context, const TrisAggRequest* request,
+			    grpc::ServerWriter<TrisReply>* writer) override {
+	std::cout << "GetTrisAggStream called" << std::endl;
+	netCDF::NcFile ncFile;
+	try {
+	    std::cout <<  "Trying to open " << request->filename() << std::endl;
+	    ncFile.open("test.nc", netCDF::NcFile::read);
+	} catch(netCDF::exceptions::NcException &e) {
+	    std::cerr << "couldnt read file" << std::endl;
+	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
+	}
+
+	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
+	auto nheight = var.getDim(HEIGHT_DIM_INDEX).getSize();
+	
+	std::vector<float> values(nheight);
+	std::vector<size_t> start(3);
+	std::vector<size_t> count(3);
+	count[0] = 1;
+	count[HEIGHT_DIM_INDEX] = nheight;
+	count[2] = 1;
+
+	int bulk_size = 5000;
+	for(int i = 0; i < NCELLS; ++i){
+	    start[2] = i;
+	    var.getVar(start,count,&values[0]);
+	    auto acc = std::accumulate(values.begin(), values.end(), 0.0);
+	    if(request->aggregatefunction() == nc::TrisAggRequest_Op_MEAN){
+		acc /= nheight;
+	    }
+	    TrisReply reply = TrisReply();
+	    reply.add_data(acc);
+
+	    if(i % bulk_size == 0){
+		writer->Write(reply);
+	    }
+	}
+
+	std::cout << "GetTrisAggStream ok" << std::endl;
 	return Status::OK;
     }
 

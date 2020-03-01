@@ -34,13 +34,18 @@ logger = logging.getLogger('ncview2')
 logger.info({i.__name__:i.__version__ for i in [hv, np, pd]})
 
 
-defaultinput = "http://eos.scc.kit.edu/thredds/dodsC/localpolstracc/2016020100/2016020100-ART-chemtracer_grid_DOM01_HL_0018.nc"
+defaultinput = "http://eos.scc.kit.edu/thredds/dodsC/localpolstracc/2016020100/2016020100-ART-chemtracer_grid_DOM01_ML_0018.nc"
 #defaultinput = "eos.scc.kit.edu"
-#defaultinput = "/home/tom/Documents/nc_files/test.nc"
+defaultinput = "/home/tom/Documents/nc_files/2016020100-ART-chemtracer_grid_DOM01_ML_0018.nc"
 
 urlinput = TextInput(value=defaultinput, title="netCDF file -OR- OPeNDAP URL:")
 slVar = None
+
 slMesh = None
+meshOptions = {"DOM1" : 0, "DOM2" : 1} # todo link to grpc enum for dom
+# TODO implement DOM02, DOM03
+#meshOptions = ["reg","calculate", "DOM1", "DOM2"]
+
 slCMap = None
 slAggregateFunction = None
 slAggregateDimension = None
@@ -59,9 +64,8 @@ COLORMAPS = ["Blues","Inferno","Magma","Plasma","Viridis","BrBG","PiYG","PRGn","
 tmPlot = None
 cuPlot = None
 hpPlot = None
-xrData = None
+url = None
 xrDataMeta = None
-loadViaGrpc = False
 
 class Aggregates():
     def __init__(self, dim, f):
@@ -76,32 +80,12 @@ def getURL():
     Returns:
         str: The entered data url
     """
+    global url
     url = urlinput.value
     # Build list if multiple urls are entered
     if ',' in url:
         url = url.split(',')
     return url
-
-def loadData(url):
-    """
-    Function load OPeNDAP data
-
-    Returns:
-        xarray Dataset: Loads the url as xarray Dataset
-    """
-    assert loadViaGrpc == False;
-    start = time.time()
-    # As issue: https://github.com/pydata/xarray/issues/1385 writes, open_mfdata is much slower. Opening the
-    # same file and preparing it for the curve graph is taking minutes with open_mfdataset, but seconds with open_dataset
-    if '*' in url or isinstance(url,list): # TODO deal with multiple files
-        logger.info("Loading with open_mfdataset")
-        xrData = xr.open_mfdataset(url,decode_cf=False,decode_times=False)
-    else:
-        logger.info("Loading with open_data")
-        xrData = xr.open_dataset(url, decode_cf=False, decode_times=False)
-    end = time.time()
-    logger.info("LoadData took %d" % (end - start))
-    return xrData
 
 def loadDataMeta(url):
     """
@@ -111,15 +95,12 @@ def loadDataMeta(url):
         xarray Dataset: Loads the url as xarray Dataset
     """
     start = time.time()
-    global loadViaGrpc
     # As issue: https://github.com/pydata/xarray/issues/1385 writes, open_mfdata is much slower. Opening the
     # same file and preparing it for the curve graph is taking minutes with open_mfdataset, but seconds with open_dataset
     if '*' in url or isinstance(url,list):
         logger.info("Loading with open_mfdataset")
         xrData = xr.open_mfdataset(url,decode_cf=False,decode_times=False, chunks={})
     else:
-        if url[:4] == 'http':
-            loadViaGrpc = True
         logger.info("Loading with open_data")
         xrData = xr.open_dataset(url, decode_cf=False, decode_times=False, chunks={})
     end = time.time()
@@ -128,7 +109,7 @@ def loadDataMeta(url):
 
 
 def preDialog():
-    global slVar, slMesh, xrDataMeta
+    global slVar, slMesh, xrDataMeta, meshOptions
     start = time.time()
     logger.info("Started preDialog()")
 
@@ -154,16 +135,11 @@ def preDialog():
         curdoc().add_root(l)
         return
 
-
     variables = [x for x in xrDataMeta.variables.keys()]
-    # TODO implement DOM02, DOM03
-    meshOptions = ["DOM1", "DOM2"]
-    #meshOptions = ["reg","calculate", "DOM1", "DOM2"]
-
 
     default_dom = "DOM1" if "DOM01" in urlinput.value else "DOM2"
     slVar = bokeh.models.Select(title="Variable", options=variables, value="TR_stn")
-    slMesh = bokeh.models.Select(title="Mesh", options=meshOptions, value=default_dom)
+    slMesh = bokeh.models.Select(title="Mesh", options=list(meshOptions.keys()), value=default_dom)
     txPre = bokeh.models.PreText(text=str(xrDataMeta),width=800)
     btShow = bokeh.models.Button(label="show")
     btShow.on_click(btClick)
@@ -237,15 +213,15 @@ def btApplyClick():
 def btClick():
     mainDialog(True)
 
+
 def mainDialog(dataUpdate=True):
     """
     This function build up and manages the Main-Graph Dialog
     """
-
-    global slVar, slCMap, txTitle, slAggregateFunction, slAggregateDimension, cbCoastlineOverlay, cbColoring, cbAxis
+    global url, meshOptions
+    global slVar, slMesh, slCMap, txTitle, slAggregateFunction, slAggregateDimension, cbCoastlineOverlay, cbColoring, cbAxis
     global tmPlot, cuPlot, hpPlot
-    global xrData, xrDataMeta
-    global loadViaGrpc
+    global xrDataMeta
     global txFixColoringMin, txFixColoringMax, txCLevels
     try:
         start = time.time()
@@ -279,13 +255,14 @@ def mainDialog(dataUpdate=True):
         aggregateFunctions = ["None","mean","sum"]
         # TODO load this array from the data
 
+        # TODO could be better, this doesnt work when files are renamed
         if "ML" in urlinput.value:
-            height = "height"
+            heightDim = "height"
         elif "PL" in urlinput.value:
-            height = "lev"
+            heightDim = "lev"
         else:
-            height = "alt"
-        aggregateDimensions = ["None", height, "lat", "heightProfile"] # removed lat since it takes too long
+            heightDim = "alt"
+        aggregateDimensions = ["None", heightDim, "lat", "heightProfile"] # removed lat since it takes too long
 
         # time could only be aggregated if it exist
         if hasattr(xrDataMeta.clon_bnds, "time"):
@@ -348,50 +325,22 @@ def mainDialog(dataUpdate=True):
         curdoc().add_root(l)
 
         # Choose if a Curve or TriMesh is to be used
-        # aggDim = "heightProfile"
-        # aggFn = "mean"
         if aggDim == "lat" and aggFn != "None":
-            if xrData is None and loadViaGrpc == False:
-                logger.info("Loading unchunked data for curveplot")
-                try:
-                    url = getURL()
-                    xrData = loadData(url)
-                    assert xrData != None
-                except:
-                    logger.error("Error for loading unchunked data.")
             if cuPlot is None:
                 logger.info("Build CurvePlot")
-                if loadViaGrpc:
-                    cuPlot = CurvePlot(logger, renderer, xrDataMeta, loadViaGrpc)
-                else:
-                    cuPlot = CurvePlot(logger, renderer, xrData, loadViaGrpc)
+                cuPlot = CurvePlot(url, heightDim, meshOptions[slMesh.value], logger, renderer, xrDataMeta)
             plot = cuPlot.getPlotObject(variable=variable,title=title,aggDim=aggDim,aggFn=aggFn,logX=logX, logY=logY,dataUpdate=dataUpdate)
             logger.info("Returned plot")
         elif aggDim == "heightProfile" and aggFn != "None":
-            if xrData is None  and loadViaGrpc == False:
-                logger.info("Loading unchunked data for curveplot")
-                try:
-                    url = getURL()
-                    xrData = loadData(url)
-                    assert xrData != None
-                except:
-                    logger.error("Error for loading unchunked data.")
             if hpPlot is None:
                 logger.info("Build HeightProfilePlot")
-                if loadViaGrpc:
-                    hpPlot = HeightProfilePlot(logger, renderer, xrDataMeta, True)
-                else:
-                    hpPlot = HeightProfilePlot(logger, renderer, xrData, False)
+                hpPlot = HeightProfilePlot(url, meshOptions[slMesh.value], logger, renderer, xrDataMeta)
             plot = hpPlot.getPlotObject(variable=variable, title=title,aggDim=aggDim,aggFn=aggFn,cm=cm,cSymmetric=cSymmetric,cLogZ=cLogZ,cLevels=cLevels,dataUpdate=dataUpdate)
             logger.info("Returned plot")
         else:
             if tmPlot is None:
                 logger.info("Build TriMeshPlot")
-                if loadViaGrpc:
-                    tmPlot = TriMeshPlot(logger, renderer, xrDataMeta, True)
-                else:
-                    tmPlot = TriMeshPlot(logger, renderer, xrDataMeta, False)                
-                
+                tmPlot = TriMeshPlot(url, heightDim, logger, renderer, xrDataMeta)
             plot = tmPlot.getPlotObject(variable=variable,title=title,cm=cm,aggDim=aggDim,aggFn=aggFn, showCoastline=showCoastline, useFixColoring=useFixColoring, fixColoringMin=fixColorMin, fixColoringMax=fixColorMax,cSymmetric=cSymmetric,cLogZ=cLogZ,cLevels=cLevels,dataUpdate=dataUpdate)
 
         curdoc().clear()

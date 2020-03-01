@@ -11,6 +11,12 @@ import nc_pb2
 from .Plot import Plot
 
 class CurvePlot(Plot):
+
+    def __init__(self, url, heightDim, dom, logger, renderer, xrMetaData):
+        super().__init__(url, logger, renderer, xrMetaData)
+        self.heightDim = heightDim
+        self.dom = dom
+
     def getPlotObject(self, variable, title, aggDim="None", aggFn="None", logX=False, logY=False,dataUpdate=True):
         """
         Function that builds up a plot object for Bokeh to display
@@ -27,16 +33,6 @@ class CurvePlot(Plot):
 
         self.dataUpdate = dataUpdate
 
-        if self.aggDim == "lat" and self.xrData != None:
-            self.cells = []
-            for i in range(0,360):
-                self.cells.append((np.loadtxt("dom01/dom01_lon_"+str(i)+"deg.dat",dtype='int16')))
-
-            self.cells = [getattr(self.xrData, self.variable).isel(ncells=self.cells[i]) for i in range(0, 360)]
-            self.logger.info("Loaded dom files!")
-
-
-
         # Builds up the free and non-free dimensions array
         self.buildDims()
         return self.buildDynamicMap()
@@ -44,8 +40,7 @@ class CurvePlot(Plot):
     def buildDynamicMap(self):
         ranges = self.getRanges()
 
-        # TODO do not hardcode the sizes
-        totalgraphopts = {"height": 150, "width": 300}
+        totalgraphopts = {"height": self.HEIGHT, "width": self.WIDTH}
         dm = hv.DynamicMap(self.buildCurvePlot, kdims=self.freeDims).redim.range(**ranges)
         self.logger.info("Build into Dynamic Map")
         return self.renderer.get_widget(dm.opts(**totalgraphopts),'widgets')
@@ -58,40 +53,30 @@ class CurvePlot(Plot):
         Returns:
             The Curve-Graph object
         """
-
-        print(args)
         selectors = self.buildSelectors(args)
 
         # This part is not needed as a TriMeshGraph is drawn instead
         #if self.aggFn == "mean" and self.aggDim != "lat":
-        #    dat = getattr(self.xrData, self.variable).isel(selectors)
+        #    dat = getattr(self.xrMetaData, self.variable).isel(selectors)
         #    dat = dat.mean(aggDim)
 
         #if self.aggFn == "sum" and self.aggDim != "lat":
-        #    dat = getattr(self.xrData, self.variable).isel(selectors)
+        #    dat = getattr(self.xrMetaData, self.variable).isel(selectors)
         #    dat = dat.sum(aggDim)
 
         if self.dataUpdate == True:
             self.logger.info("Loading data")
 
-            # # PERFORMANCE: Not optimal. Load cells via isel only one time should be faster
-            if self.loadViaGrpc == False:
-                if self.aggDim == "lat" and self.aggFn == "mean":
-                    self.dat = [self.cells[i].isel(**selectors).mean() for i in range(0,360)]
-                elif self.aggDim == "lat" and self.aggFn == "sum":
-                    self.dat = [self.cells[i].isel(**selectors).sum() for i in range(0,360)]
-            else:
-                if self.aggDim == "lat" and self.aggFn == "mean":
-                    self.dat = self.stub.GetAggValuesPerLon(nc_pb2.AggValuesPerLonRequest(filename="test.nc", variable=self.variable, alt=int(selectors['alt']), dom=0, aggregateFunction=0)).data
-                elif self.aggDim == "lat" and self.aggFn == "sum":
-                    self.dat = self.stub.GetAggValuesPerLon(nc_pb2.AggValuesPerLonRequest(filename="test.nc", variable=self.variable, alt=int(selectors['alt']), dom=0, aggregateFunction=1)).data     
+            if self.aggDim == "lat" and self.aggFn == "mean":
+                self.dat = self.stub.GetAggValuesPerLon(nc_pb2.AggValuesPerLonRequest(filename=self.url, variable=self.variable, alt=int(selectors[self.heightDim]), dom=self.dom, aggregateFunction=0)).data
+            elif self.aggDim == "lat" and self.aggFn == "sum":
+                self.dat = self.stub.GetAggValuesPerLon(nc_pb2.AggValuesPerLonRequest(filename=self.url, variable=self.variable, alt=int(selectors[self.heightDim]), dom=self.dom, aggregateFunction=1)).data     
             self.logger.info("Loaded data")
 
         # TODO Apply unit
         #factor = 1
         #dat = dat * factor
 
-        # TODO Height hardcoded
         res = hv.Curve(self.dat, label=self.title).opts(xlabel="Longitude", ylabel=self.variable, logy=self.logY, logx=self.logX) # Todo agg function parameter
 
         return res

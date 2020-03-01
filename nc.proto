@@ -31,6 +31,8 @@ service NCService {
   rpc GetTris (TrisRequest) returns (TrisReply) {}
 
   rpc GetTrisAgg (TrisAggRequest) returns (TrisReply) {}
+
+  rpc GetTrisAggStream (TrisAggRequest) returns (stream TrisReply) {}
 }
 
 message AggValuesPerLonRequest {
@@ -71,6 +73,7 @@ message TrisRequest {
 message TrisReply {
     repeated float data = 1;
 }
+
 
 message TrisAggRequest {
     string filename = 1;

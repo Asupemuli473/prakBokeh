@@ -6,17 +6,19 @@ import nc_pb2_grpc
 
 
 class Plot:
-    def __init__(self, logger, renderer, xrData, loadViaGrpc):
+    HEIGHT = 150
+    WIDTH = 300	
+
+    def __init__(self, url, logger, renderer, xrMetaData):
+        self.url = url
         self.logger = logger
         self.renderer = renderer
-        self.xrData = xrData
-        self.loadViaGrpc = loadViaGrpc
-        if self.loadViaGrpc:
-            channel = grpc.insecure_channel('0.0.0.0:50051')
-            self.stub = nc_pb2_grpc.NCServiceStub(channel)
-        else:
-            self.stub = None;
-        assert self.xrData != None
+        self.xrMetaData = xrMetaData
+        
+        channel = grpc.insecure_channel('0.0.0.0:50051')
+        self.stub = nc_pb2_grpc.NCServiceStub(channel)
+
+        assert self.xrMetaData != None
 
     def buildDims(self):
         """
@@ -27,8 +29,7 @@ class Plot:
         self.freeDims = []
         self.nonFreeDims = []
 
-        for d in getattr(self.xrData,self.variable).dims:
-
+        for d in getattr(self.xrMetaData,self.variable).dims:
             # Skip aggregated dimensions only it a Aggregate-Function is specified
             if d == self.aggDim and self.aggFn != "None":
                 # Skip aggregated dimensions
@@ -39,9 +40,9 @@ class Plot:
             if d == "height":
                 self.freeDims.append("hi")
                 continue
-            if d != "ncells" and (len(getattr(getattr(self.xrData,self.variable),d))-1) > 0:
+            if d != "ncells" and (len(getattr(getattr(self.xrMetaData,self.variable),d))-1) > 0:
                 self.freeDims.append(d)
-            if d != "ncells" and (len(getattr(getattr(self.xrData,self.variable),d))-1) == 0:
+            if d != "ncells" and (len(getattr(getattr(self.xrMetaData,self.variable),d))-1) == 0:
                 self.nonFreeDims.append(d)
 
     def getRanges(self):
@@ -55,9 +56,9 @@ class Plot:
             # WORKAROUND because Holoview is not working with a kdim with name "height"
             # See issue https://github.com/pyviz/holoviews/issues/3448
             if d != "hi":
-                ranges[d] = (0,len(getattr(getattr(self.xrData,self.variable),d))-1)
+                ranges[d] = (0,len(getattr(getattr(self.xrMetaData,self.variable),d))-1)
             else:
-                ranges[d] = (0,len(getattr(getattr(self.xrData,self.variable),"height"))-1)
+                ranges[d] = (0,len(getattr(getattr(self.xrMetaData,self.variable),"height"))-1)
         return ranges
 
     def buildSelectors(self, args):

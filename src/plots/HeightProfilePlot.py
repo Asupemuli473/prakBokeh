@@ -11,6 +11,12 @@ import nc_pb2
 from .Plot import Plot
 
 class HeightProfilePlot(Plot):
+    NLONS = 360
+
+    def __init__(self, url, dom, logger, renderer, xrMetaData):
+        super().__init__(url, logger, renderer, xrMetaData)
+        self.dom = dom
+    
     def getPlotObject(self, variable, title, aggDim="None", aggFn="None",cm="Magma", cSymmetric=False, cLogZ=False, cLevels=0, dataUpdate=True):
         """
         Function that builds up a plot object for Bokeh to display
@@ -37,14 +43,6 @@ class HeightProfilePlot(Plot):
 
         self.dataUpdate = dataUpdate
 
-        # Dirty! Fix this TODO
-        if self.loadViaGrpc == False:
-            if self.aggDim == "heightProfile":
-                self.cells = []
-                for i in range(0,360):
-                    self.cells.append(np.loadtxt("dom01/dom01_lon_"+str(i)+"deg.dat",dtype='int16'))
-                self.logger.info("Loaded dom files!")
-
         # Builds up the free and non-free dimensions array
         self.buildDims()
         return self.buildDynamicMap()
@@ -52,10 +50,8 @@ class HeightProfilePlot(Plot):
     def buildDynamicMap(self):
         ranges = self.getRanges()
 
-        # TODO do not hardcode the sizes
-        totalgraphopts = {"height": 150, "width": 300}
+        totalgraphopts = {"height": self.HEIGHT, "width": self.WIDTH}
 
-        print(self.freeDims)
         if "hi" in self.freeDims:
             self.freeDims.remove("hi")
         if len(self.freeDims) > 0:
@@ -80,30 +76,24 @@ class HeightProfilePlot(Plot):
         selectors = self.buildSelectors(args)
         self.logger.info("Loading data")
 
-        # PERFORMANCE: Not optimal. Load cells via isel only one time should be faster
+        # has_height= hasattr(self.xrMetaData, "height")
+
+        # # If there is no height dimension we take alt instead
+        # if has_height == False:
+        #     del selectors['alt']
+                
         if self.dataUpdate == True:
-            if self.loadViaGrpc == False:
-                if self.aggFn == "mean":
-                    self.dat = [[getattr(self.xrData, self.variable).isel(**selectors, height=h, ncells=self.cells[i]).mean() for i in range(0,360)] for h in range(0,90)]
-                elif self.aggFn == "sum":
-                    self.dat = [[getattr(self.xrData, self.variable).isel(**selectors, height=h, ncells=self.cells[i]).sum() for i in range(0,360)] for h in range(0,90)]
-            else:
-                reponse = 0;
-                if self.aggFn == "mean":
-                    response = self.stub.GetHeightProfile(nc_pb2.HeightProfileRequest(filename="1.nc", variable=self.variable, dom=0, aggregateFunction=0))     
-                elif self.aggFn == "sum":
-                    response = self.stub.GetHeightProfile(nc_pb2.HeightProfileRequest(filename="1.nc", variable=self.variable, dom=0, aggregateFunction=1))
-                self.dat = [response.result[i].data for i in range(0,90)]
-                    
-                print(response)
-                    
+            reponse = 0;
+            if self.aggFn == "mean":
+                response = self.stub.GetHeightProfile(nc_pb2.HeightProfileRequest(filename=self.url, variable=self.variable, dom=self.dom, aggregateFunction=0))     
+            elif self.aggFn == "sum":
+                response = self.stub.GetHeightProfile(nc_pb2.HeightProfileRequest(filename=self.url, variable=self.variable, dom=self.dom, aggregateFunction=1))
+            self.dat = [response.result[i].data for i in range(0,len(response.result))]
+
         # TODO Apply unit
         #factor = 1
         #dat = dat * factor
 
-        # TODO Dimensions hardcoded
-        res = hv.Image((range(360), range(90), self.dat), datatype=['grid'], label=self.title).opts(xlabel="Longitude", ylabel="height",cmap=self.cm,symmetric=self.cSymmetric,logz=self.cLogZ,color_levels=self.cLevels,colorbar=True)
-
-        print(self.dat[0][:10])
+        res = hv.Image((range(self.NLONS), range(len(response.result)), self.dat), datatype=['grid'], label=self.title).opts(xlabel="Longitude", ylabel="height",cmap=self.cm,symmetric=self.cSymmetric,logz=self.cLogZ,color_levels=self.cLevels,colorbar=True)
         
         return res
