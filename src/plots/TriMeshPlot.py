@@ -104,7 +104,7 @@ class TriMeshPlot(Plot):
         coastln = gf.coastline.opts(projection=crs.PlateCarree(),line_width=2)
         rasterizedgraphopts = {"cmap":self.cm,"colorbar":True}
         # TODO do not hardcode the sizes
-        totalgraphopts = {"height":150, "width":300}
+        totalgraphopts = {"height":self.HEIGHT, "width":self.WIDTH}
 
 
         if len(self.freeDims) > 0:
@@ -131,9 +131,6 @@ class TriMeshPlot(Plot):
                 preGraph = rasterize(dm).opts(**rasterizedgraphopts).opts(symmetric=self.cSymmetric,logz=self.cLogZ,color_levels=self.cLevels)
         except Exception as e:
             print(e)
-
-
-
 
         if self.showCoastline == True:
             graph = preGraph * coastln
@@ -167,13 +164,8 @@ class TriMeshPlot(Plot):
             else:
                 if self.aggFn == "mean":
                     self.logger.info("mean aggregation with %s" % self.aggDim)
-                    self.tris["var"] = np.empty(327680, dtype=float)
-                    replies = self.stub.GetTrisAggStream(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=0))
-                    index = 0
-                    for r in replies:
-                        for d in r.data:
-                            self.tris["var"][index] = d
-                            index += 1
+                    self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=0)).data
+                    print(self.tris["var"][:10])
                 elif self.aggFn == "sum":
                     self.logger.info("sum aggregation %s" % self.aggDim)
                     self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=1)).data

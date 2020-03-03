@@ -80,6 +80,14 @@ public:
 		    cellToLatLookupDOM01[ncell] = i;
 		    latCountDOM01[i]++;
 		}
+		int j = 0;
+		for(auto v : latCountDOM01){
+		    std::cout << "Lat " << j++ << " - " << v << " [";
+		    for(int k = 0; k < 10; ++k){
+			std::cout << cellToLatLookupDOM01[k] << ",";
+		    }
+		    std::cout << "]" << std::endl;
+		}
 		file1.close();
 
 		while(getline(file2, line)){
@@ -165,17 +173,21 @@ public:
 	count[2] = NCELLS;
     
 	std::vector<float> values(NCELLS);
-    
 	var.getVar(start,count,&values[0]);
 
-	std::vector<int>* cellToLatLookup = request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? &cellToLatLookupDOM01 : &cellToLatLookupDOM02;
-	std::vector<int>* latCountLookup = request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? &latCountDOM01 : &latCountDOM02;
+
+	std::vector<int>* cellToLatLookup = &cellToLatLookupDOM01;// request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? &cellToLatLookupDOM01 : &cellToLatLookupDOM02;
+	std::vector<int>* latCountLookup = &latCountDOM01;// request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? &latCountDOM01 : &latCountDOM02;
 
 	std::vector<float> data(NLATS);
 	for(int i = 0; i < NCELLS; ++i){
 	    data[(*cellToLatLookup)[i]] += values[i];
+	    if(i < 1000){
+		std::cout << data[(*cellToLatLookup)[i]] << std::endl;		
+	    }
 	}
 
+	
 	for(int i = 0; i < NLATS; ++i){
 	    auto val = nc::AggValuesPerLonRequest_Op_MEAN == request->aggregatefunction() ? data[i] / (*latCountLookup)[i] : data[i];
 	    reply->add_data(val);
@@ -193,7 +205,7 @@ public:
 	netCDF::NcFile ncFile;
 	try {
 	    std::cout <<  "Trying to open " << request->filename() << std::endl;
-	    ncFile.open("test.nc", netCDF::NcFile::read);
+	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
 	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
@@ -237,7 +249,7 @@ public:
 	netCDF::NcFile ncFile;
 	try {
 	    std::cout <<  "Trying to open " << request->filename() << std::endl;
-	    ncFile.open("test.nc", netCDF::NcFile::read);
+	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
 	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
@@ -270,7 +282,7 @@ public:
 	netCDF::NcFile ncFile;
 	try {
 	    std::cout <<  "Trying to open " << request->filename() << std::endl;
-	    ncFile.open("test.nc", netCDF::NcFile::read);
+	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
 	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
@@ -279,21 +291,30 @@ public:
 	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
 	auto nheight = var.getDim(HEIGHT_DIM_INDEX).getSize();
 	
-	std::vector<float> values(nheight);
+	std::vector<float> values(NCELLS);
 	std::vector<size_t> start(3);
 	std::vector<size_t> count(3);
+
 	count[0] = 1;
-	count[HEIGHT_DIM_INDEX] = nheight;
-	count[2] = 1;
+	count[HEIGHT_DIM_INDEX] = 1;
+	count[2] = NCELLS;
+
+	std::vector<float> acc(NCELLS);
+	for(int i = 0; i < nheight; ++i){
+	    std::cout << i << std::endl;
+	    start[1] = i;
+	    var.getVar(start,count,&values[0]);
+	    std::transform (acc.begin(), acc.end(), values.begin(), acc.begin(), std::plus<float>());
+	}
 
 	for(int i = 0; i < NCELLS; ++i){
-	    start[2] = i;
-	    var.getVar(start,count,&values[0]);
-	    auto acc = std::accumulate(values.begin(), values.end(), 0.0);
 	    if(request->aggregatefunction() == nc::TrisAggRequest_Op_MEAN){
-		acc /= nheight;
+		reply->add_data(acc[i] / nheight);
 	    }
-	    reply->add_data(acc);
+	    else{
+		reply->add_data(acc[i]);		
+	    }
+
 	}
 
 	std::cout << "GetTrisAgg ok" << std::endl;
@@ -306,7 +327,7 @@ public:
 	netCDF::NcFile ncFile;
 	try {
 	    std::cout <<  "Trying to open " << request->filename() << std::endl;
-	    ncFile.open("test.nc", netCDF::NcFile::read);
+	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
 	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");

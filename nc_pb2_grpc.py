@@ -39,6 +39,11 @@ class NCServiceStub(object):
         request_serializer=nc__pb2.TrisAggRequest.SerializeToString,
         response_deserializer=nc__pb2.TrisReply.FromString,
         )
+    self.GetTrisAggStream = channel.unary_stream(
+        '/nc.NCService/GetTrisAggStream',
+        request_serializer=nc__pb2.TrisAggRequest.SerializeToString,
+        response_deserializer=nc__pb2.TrisReply.FromString,
+        )
 
 
 class NCServiceServicer(object):
@@ -80,6 +85,13 @@ class NCServiceServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def GetTrisAggStream(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_NCServiceServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -105,6 +117,11 @@ def add_NCServiceServicer_to_server(servicer, server):
       ),
       'GetTrisAgg': grpc.unary_unary_rpc_method_handler(
           servicer.GetTrisAgg,
+          request_deserializer=nc__pb2.TrisAggRequest.FromString,
+          response_serializer=nc__pb2.TrisReply.SerializeToString,
+      ),
+      'GetTrisAggStream': grpc.unary_stream_rpc_method_handler(
+          servicer.GetTrisAggStream,
           request_deserializer=nc__pb2.TrisAggRequest.FromString,
           response_serializer=nc__pb2.TrisReply.SerializeToString,
       ),
