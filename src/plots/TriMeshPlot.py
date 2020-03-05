@@ -165,7 +165,6 @@ class TriMeshPlot(Plot):
                 if self.aggFn == "mean":
                     self.logger.info("mean aggregation with %s" % self.aggDim)
                     self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=0)).data
-                    print(self.tris["var"][:10])
                 elif self.aggFn == "sum":
                     self.logger.info("sum aggregation %s" % self.aggDim)
                     self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=1)).data

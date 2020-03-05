@@ -70,7 +70,7 @@ public:
 	for(int i = 0; i<NLATS; ++i){
 	    std::ifstream file1, file2;
 	    std::string line;
-	    std::string filename1 = "../../dom01/dom01_lon_" + std::to_string(i) + "deg.dat", filename2 = "../../dom02/dom02_lon_" + std::to_string(i) + "deg.dat";
+	    std::string filename1 = "./dom01/dom01_lon_" + std::to_string(i) + "deg.dat", filename2 = "./dom02/dom02_lon_" + std::to_string(i) + "deg.dat";
 	    file1.open(filename1, std::ios::binary);
 	    file2.open(filename2, std::ios::binary);
 	    
@@ -79,14 +79,6 @@ public:
 		    int ncell = std::stoi(line);
 		    cellToLatLookupDOM01[ncell] = i;
 		    latCountDOM01[i]++;
-		}
-		int j = 0;
-		for(auto v : latCountDOM01){
-		    std::cout << "Lat " << j++ << " - " << v << " [";
-		    for(int k = 0; k < 10; ++k){
-			std::cout << cellToLatLookupDOM01[k] << ",";
-		    }
-		    std::cout << "]" << std::endl;
 		}
 		file1.close();
 
@@ -101,14 +93,13 @@ public:
 		std::cerr << "Unable to read file " << filename1 << " or " << filename2 << std::endl;
 	    }
 	}
-	std::cout << "Server initialization complete" << std::endl;
+	std::cout << "GRPC Server initialization complete" << std::endl;
     }
 
     Status GetHeightProfile (ServerContext* context, const nc::HeightProfileRequest* request,
 			     nc::HeightProfileReply* reply) override {
 	netCDF::NcFile ncFile;
 	try {
-	    std::cout <<  "Trying to open " << request->filename() << std::endl;
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
@@ -153,10 +144,8 @@ public:
     
     Status GetAggValuesPerLon(ServerContext* context, const AggValuesPerLonRequest* request,
 		    AggValuesPerLonReply* reply) override {
-	std::cout << "GetAggValuesPerLon called" << std::endl;
 	netCDF::NcFile ncFile;
 	try {
-	    std::cout <<  "Trying to open " << request->filename() << std::endl;
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
@@ -176,15 +165,12 @@ public:
 	var.getVar(start,count,&values[0]);
 
 
-	std::vector<int>* cellToLatLookup = &cellToLatLookupDOM01;// request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? &cellToLatLookupDOM01 : &cellToLatLookupDOM02;
-	std::vector<int>* latCountLookup = &latCountDOM01;// request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? &latCountDOM01 : &latCountDOM02;
+	std::vector<int>* cellToLatLookup = request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? &cellToLatLookupDOM01 : &cellToLatLookupDOM02;
+	std::vector<int>* latCountLookup = request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? &latCountDOM01 : &latCountDOM02;
 
 	std::vector<float> data(NLATS);
 	for(int i = 0; i < NCELLS; ++i){
 	    data[(*cellToLatLookup)[i]] += values[i];
-	    if(i < 1000){
-		std::cout << data[(*cellToLatLookup)[i]] << std::endl;		
-	    }
 	}
 
 	
@@ -195,16 +181,13 @@ public:
 
 	ncFile.close();
 
-	std::cout << "GetAggValuesPerLon ok" << std::endl;
 	return Status::OK;
     }
 
     Status GetMesh(ServerContext* context, const MeshRequest* request,
 		   MeshReply* reply) override {
-	std::cout << "GetMesh called" << std::endl;
 	netCDF::NcFile ncFile;
 	try {
-	    std::cout <<  "Trying to open " << request->filename() << std::endl;
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
@@ -238,17 +221,15 @@ public:
 	}
 	
 	ncFile.close();
-	std::cout << "GetMesh ok" << std::endl;
+
 	return Status::OK;
     }
 
 
     Status GetTris (ServerContext* context, const TrisRequest* request,
 		   TrisReply* reply) override {
-	std::cout << "GetTris called" << std::endl;
 	netCDF::NcFile ncFile;
 	try {
-	    std::cout <<  "Trying to open " << request->filename() << std::endl;
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
@@ -272,16 +253,13 @@ public:
 	    reply->add_data(v);
 	}
 
-	std::cout << "GetTris ok" << std::endl;
 	return Status::OK;
     }
 
     Status GetTrisAgg(ServerContext* context, const TrisAggRequest* request,
 		   TrisReply* reply) override {
-	std::cout << "GetTrisAgg called" << std::endl;
 	netCDF::NcFile ncFile;
 	try {
-	    std::cout <<  "Trying to open " << request->filename() << std::endl;
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
@@ -301,7 +279,6 @@ public:
 
 	std::vector<float> acc(NCELLS);
 	for(int i = 0; i < nheight; ++i){
-	    std::cout << i << std::endl;
 	    start[1] = i;
 	    var.getVar(start,count,&values[0]);
 	    std::transform (acc.begin(), acc.end(), values.begin(), acc.begin(), std::plus<float>());
@@ -317,16 +294,13 @@ public:
 
 	}
 
-	std::cout << "GetTrisAgg ok" << std::endl;
 	return Status::OK;
     }
 
     Status GetTrisAggStream(ServerContext* context, const TrisAggRequest* request,
 			    grpc::ServerWriter<TrisReply>* writer) override {
-	std::cout << "GetTrisAggStream called" << std::endl;
 	netCDF::NcFile ncFile;
 	try {
-	    std::cout <<  "Trying to open " << request->filename() << std::endl;
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
@@ -359,7 +333,6 @@ public:
 	    }
 	}
 
-	std::cout << "GetTrisAggStream ok" << std::endl;
 	return Status::OK;
     }
 
