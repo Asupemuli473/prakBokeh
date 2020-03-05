@@ -70,7 +70,7 @@ public:
 	for(int i = 0; i<NLATS; ++i){
 	    std::ifstream file1, file2;
 	    std::string line;
-	    std::string filename1 = "./dom01/dom01_lon_" + std::to_string(i) + "deg.dat", filename2 = "./dom02/dom02_lon_" + std::to_string(i) + "deg.dat";
+	    std::string filename1 = "../../dom01/dom01_lon_" + std::to_string(i) + "deg.dat", filename2 = "../../dom02/dom02_lon_" + std::to_string(i) + "deg.dat";
 	    file1.open(filename1, std::ios::binary);
 	    file2.open(filename2, std::ios::binary);
 	    
