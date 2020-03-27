@@ -15,7 +15,8 @@
  * limitations under the License.
  *
  */
-#define NCELLS 327680
+#define NCELLS_DOM01 327680
+#define NCELLS_DOM02 135788
 #define NLATS 360
 #define NMESH 983040
 #define PI 3.14159
@@ -61,8 +62,8 @@ private:
 
 public:
     ServiceImpl(){
-	cellToLatLookupDOM01 = std::vector<int>(NCELLS);
-	cellToLatLookupDOM02 = std::vector<int>(NCELLS);
+	cellToLatLookupDOM01 = std::vector<int>(NCELLS_DOM01);
+	cellToLatLookupDOM02 = std::vector<int>(NCELLS_DOM02);
 
 	latCountDOM01 = std::vector<int>(NLATS);
 	latCountDOM02 = std::vector<int>(NLATS);
@@ -107,6 +108,7 @@ public:
 
 	std::vector<int>* cellToLatLookup = request->dom() == nc::HeightProfileRequest_DOM_DOM01 ? &cellToLatLookupDOM01 : &cellToLatLookupDOM02;
 	std::vector<int>* latCountLookup = request->dom() == nc::HeightProfileRequest_DOM_DOM01 ? &latCountDOM01 : &latCountDOM02;
+	int ncells = request->dom() == nc::HeightProfileRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
     
 	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
 	auto nheight = var.getDim(HEIGHT_DIM_INDEX).getSize();
@@ -120,14 +122,14 @@ public:
 	    std::vector<size_t> count(3);
 	    count[0] = 1;
 	    count[1] = 1;
-	    count[2] = NCELLS;
+	    count[2] = ncells ;
     
-	    std::vector<float> values(NCELLS);
+	    std::vector<float> values(ncells);
 	    var.getVar(start,count,&values[0]);
 	
 	    std::vector<float> data(NLATS);
 
-	    for(int i = 0; i < NCELLS; ++i){
+	    for(int i = 0; i < ncells; ++i){
 		data[(*cellToLatLookup)[i]] += values[i];
 	    }
 
@@ -151,6 +153,8 @@ public:
 	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
 	}
 
+	int ncells = request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
+	
 	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
 
 	// 3 dimensions
@@ -159,9 +163,9 @@ public:
 	std::vector<size_t> count(3);
 	count[0] = 1;
 	count[1] = 1;
-	count[2] = NCELLS;
+	count[2] = ncells;
     
-	std::vector<float> values(NCELLS);
+	std::vector<float> values(ncells);
 	var.getVar(start,count,&values[0]);
 
 
@@ -169,7 +173,7 @@ public:
 	std::vector<int>* latCountLookup = request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? &latCountDOM01 : &latCountDOM02;
 
 	std::vector<float> data(NLATS);
-	for(int i = 0; i < NCELLS; ++i){
+	for(int i = 0; i < ncells; ++i){
 	    data[(*cellToLatLookup)[i]] += values[i];
 	}
 
@@ -194,24 +198,26 @@ public:
 	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
 	}
 
+	int ncells = request->dom() == nc::MeshRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
+
 	netCDF::NcVar clons = ncFile.getVar("clon_bnds", netCDF::NcGroup::Current);
 	netCDF::NcVar clats = ncFile.getVar("clat_bnds", netCDF::NcGroup::Current);
 
 	std::vector<double> valuesLons(NMESH), valuesLats(NMESH);
 	std::vector<size_t> start(2), count(2);
-	count[0] = NCELLS;
+	count[0] = ncells;
 	count[1] = 1;
 
 	clons.getVar(start,count,&valuesLons[0]);
 	clats.getVar(start,count,&valuesLats[0]);
 
 	start[1]++;
-	clons.getVar(start,count,&valuesLons[NCELLS]);
-	clats.getVar(start,count,&valuesLats[NCELLS]);
+	clons.getVar(start,count,&valuesLons[ncells]);
+	clats.getVar(start,count,&valuesLats[ncells]);
 	
 	start[1]++;
-	clons.getVar(start,count,&valuesLons[2 * NCELLS]);
-	clats.getVar(start,count,&valuesLats[2 * NCELLS]);
+	clons.getVar(start,count,&valuesLons[2 * ncells]);
+	clats.getVar(start,count,&valuesLats[2 * ncells]);
 
 	double f = 180 / PI;
 	
@@ -227,7 +233,7 @@ public:
 
 
     Status GetTris (ServerContext* context, const TrisRequest* request,
-		   TrisReply* reply) override {
+		    TrisReply* reply) override {
 	netCDF::NcFile ncFile;
 	try {
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
@@ -236,16 +242,18 @@ public:
 	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
 	}
 
+	int ncells = request->dom() == nc::TrisRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
+
 	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
 
-	std::vector<float> values(NCELLS);
+	std::vector<float> values(ncells);
 	std::vector<size_t> start(3);
 	start[1] = request->alt();
 
 	std::vector<size_t> count(3);
 	count[0] = 1;
 	count[1] = 1;
-	count[2] = NCELLS;
+	count[2] = ncells;
 
 	var.getVar(start,count,&values[0]);
 
@@ -268,23 +276,24 @@ public:
 
 	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
 	auto nheight = var.getDim(HEIGHT_DIM_INDEX).getSize();
+	int ncells = request->dom() == nc::TrisAggRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
 	
-	std::vector<float> values(NCELLS);
+	std::vector<float> values(ncells);
 	std::vector<size_t> start(3);
 	std::vector<size_t> count(3);
 
 	count[0] = 1;
 	count[HEIGHT_DIM_INDEX] = 1;
-	count[2] = NCELLS;
+	count[2] = ncells;
 
-	std::vector<float> acc(NCELLS);
+	std::vector<float> acc(ncells);
 	for(int i = 0; i < nheight; ++i){
 	    start[1] = i;
 	    var.getVar(start,count,&values[0]);
 	    std::transform (acc.begin(), acc.end(), values.begin(), acc.begin(), std::plus<float>());
 	}
 
-	for(int i = 0; i < NCELLS; ++i){
+	for(int i = 0; i < ncells; ++i){
 	    if(request->aggregatefunction() == nc::TrisAggRequest_Op_MEAN){
 		reply->add_data(acc[i] / nheight);
 	    }
@@ -309,6 +318,7 @@ public:
 
 	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
 	auto nheight = var.getDim(HEIGHT_DIM_INDEX).getSize();
+	int ncells = request->dom() == nc::TrisAggRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
 	
 	std::vector<float> values(nheight);
 	std::vector<size_t> start(3);
@@ -318,7 +328,7 @@ public:
 	count[2] = 1;
 
 	int bulk_size = 5000;
-	for(int i = 0; i < NCELLS; ++i){
+	for(int i = 0; i < ncells; ++i){
 	    start[2] = i;
 	    var.getVar(start,count,&values[0]);
 	    auto acc = std::accumulate(values.begin(), values.end(), 0.0);

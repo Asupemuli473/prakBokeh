@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='nc',
   syntax='proto3',
   serialized_options=_b('\n\007grpc.ncB\007NCProtoP\001\242\002\002NC'),
-  serialized_pb=_b('\n\x08nc.proto\x12\x02nc\"\xe6\x01\n\x16\x41ggValuesPerLonRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x10\n\x08variable\x18\x02 \x01(\t\x12\x0b\n\x03\x61lt\x18\x03 \x01(\x11\x12+\n\x03\x64om\x18\x04 \x01(\x0e\x32\x1e.nc.AggValuesPerLonRequest.DOM\x12\x38\n\x11\x61ggregateFunction\x18\x05 \x01(\x0e\x32\x1d.nc.AggValuesPerLonRequest.Op\"\x1b\n\x03\x44OM\x12\t\n\x05\x44OM01\x10\x00\x12\t\n\x05\x44OM02\x10\x01\"\x17\n\x02Op\x12\x08\n\x04MEAN\x10\x00\x12\x07\n\x03SUM\x10\x01\"$\n\x14\x41ggValuesPerLonReply\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\"\x1f\n\x0bMeshRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\"\'\n\tMeshReply\x12\x0c\n\x04lons\x18\x01 \x03(\x01\x12\x0c\n\x04lats\x18\x02 \x03(\x01\">\n\x0bTrisRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x10\n\x08variable\x18\x02 \x01(\t\x12\x0b\n\x03\x61lt\x18\x03 \x01(\x11\"\x19\n\tTrisReply\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\"\x7f\n\x0eTrisAggRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x10\n\x08variable\x18\x02 \x01(\t\x12\x30\n\x11\x61ggregateFunction\x18\x03 \x01(\x0e\x32\x15.nc.TrisAggRequest.Op\"\x17\n\x02Op\x12\x08\n\x04MEAN\x10\x00\x12\x07\n\x03SUM\x10\x01\"\xd3\x01\n\x14HeightProfileRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x10\n\x08variable\x18\x02 \x01(\t\x12)\n\x03\x64om\x18\x03 \x01(\x0e\x32\x1c.nc.HeightProfileRequest.DOM\x12\x36\n\x11\x61ggregateFunction\x18\x04 \x01(\x0e\x32\x1b.nc.HeightProfileRequest.Op\"\x1b\n\x03\x44OM\x12\t\n\x05\x44OM01\x10\x00\x12\t\n\x05\x44OM02\x10\x01\"\x17\n\x02Op\x12\x08\n\x04MEAN\x10\x00\x12\x07\n\x03SUM\x10\x01\"7\n\x12HeightProfileReply\x12!\n\x06result\x18\x01 \x03(\x0b\x32\x11.nc.PerHeightData\"\x1d\n\rPerHeightData\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\x32\xe9\x02\n\tNCService\x12\x46\n\x10GetHeightProfile\x12\x18.nc.HeightProfileRequest\x1a\x16.nc.HeightProfileReply\"\x00\x12L\n\x12GetAggValuesPerLon\x12\x1a.nc.AggValuesPerLonRequest\x1a\x18.nc.AggValuesPerLonReply\"\x00\x12+\n\x07GetMesh\x12\x0f.nc.MeshRequest\x1a\r.nc.MeshReply\"\x00\x12+\n\x07GetTris\x12\x0f.nc.TrisRequest\x1a\r.nc.TrisReply\"\x00\x12\x31\n\nGetTrisAgg\x12\x12.nc.TrisAggRequest\x1a\r.nc.TrisReply\"\x00\x12\x39\n\x10GetTrisAggStream\x12\x12.nc.TrisAggRequest\x1a\r.nc.TrisReply\"\x00\x30\x01\x42\x19\n\x07grpc.ncB\x07NCProtoP\x01\xa2\x02\x02NCb\x06proto3')
+  serialized_pb=_b('\n\x08nc.proto\x12\x02nc\"\xe6\x01\n\x16\x41ggValuesPerLonRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x10\n\x08variable\x18\x02 \x01(\t\x12\x0b\n\x03\x61lt\x18\x03 \x01(\x11\x12+\n\x03\x64om\x18\x04 \x01(\x0e\x32\x1e.nc.AggValuesPerLonRequest.DOM\x12\x38\n\x11\x61ggregateFunction\x18\x05 \x01(\x0e\x32\x1d.nc.AggValuesPerLonRequest.Op\"\x1b\n\x03\x44OM\x12\t\n\x05\x44OM01\x10\x00\x12\t\n\x05\x44OM02\x10\x01\"\x17\n\x02Op\x12\x08\n\x04MEAN\x10\x00\x12\x07\n\x03SUM\x10\x01\"$\n\x14\x41ggValuesPerLonReply\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\"^\n\x0bMeshRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12 \n\x03\x64om\x18\x02 \x01(\x0e\x32\x13.nc.MeshRequest.DOM\"\x1b\n\x03\x44OM\x12\t\n\x05\x44OM01\x10\x00\x12\t\n\x05\x44OM02\x10\x01\"\'\n\tMeshReply\x12\x0c\n\x04lons\x18\x01 \x03(\x01\x12\x0c\n\x04lats\x18\x02 \x03(\x01\"}\n\x0bTrisRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x10\n\x08variable\x18\x02 \x01(\t\x12\x0b\n\x03\x61lt\x18\x03 \x01(\x11\x12 \n\x03\x64om\x18\x04 \x01(\x0e\x32\x13.nc.TrisRequest.DOM\"\x1b\n\x03\x44OM\x12\t\n\x05\x44OM01\x10\x00\x12\t\n\x05\x44OM02\x10\x01\"\x19\n\tTrisReply\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\"\xc1\x01\n\x0eTrisAggRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x10\n\x08variable\x18\x02 \x01(\t\x12\x30\n\x11\x61ggregateFunction\x18\x03 \x01(\x0e\x32\x15.nc.TrisAggRequest.Op\x12#\n\x03\x64om\x18\x04 \x01(\x0e\x32\x16.nc.TrisAggRequest.DOM\"\x17\n\x02Op\x12\x08\n\x04MEAN\x10\x00\x12\x07\n\x03SUM\x10\x01\"\x1b\n\x03\x44OM\x12\t\n\x05\x44OM01\x10\x00\x12\t\n\x05\x44OM02\x10\x01\"\xd3\x01\n\x14HeightProfileRequest\x12\x10\n\x08\x66ilename\x18\x01 \x01(\t\x12\x10\n\x08variable\x18\x02 \x01(\t\x12)\n\x03\x64om\x18\x03 \x01(\x0e\x32\x1c.nc.HeightProfileRequest.DOM\x12\x36\n\x11\x61ggregateFunction\x18\x04 \x01(\x0e\x32\x1b.nc.HeightProfileRequest.Op\"\x1b\n\x03\x44OM\x12\t\n\x05\x44OM01\x10\x00\x12\t\n\x05\x44OM02\x10\x01\"\x17\n\x02Op\x12\x08\n\x04MEAN\x10\x00\x12\x07\n\x03SUM\x10\x01\"7\n\x12HeightProfileReply\x12!\n\x06result\x18\x01 \x03(\x0b\x32\x11.nc.PerHeightData\"\x1d\n\rPerHeightData\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x02\x32\xe9\x02\n\tNCService\x12\x46\n\x10GetHeightProfile\x12\x18.nc.HeightProfileRequest\x1a\x16.nc.HeightProfileReply\"\x00\x12L\n\x12GetAggValuesPerLon\x12\x1a.nc.AggValuesPerLonRequest\x1a\x18.nc.AggValuesPerLonReply\"\x00\x12+\n\x07GetMesh\x12\x0f.nc.MeshRequest\x1a\r.nc.MeshReply\"\x00\x12+\n\x07GetTris\x12\x0f.nc.TrisRequest\x1a\r.nc.TrisReply\"\x00\x12\x31\n\nGetTrisAgg\x12\x12.nc.TrisAggRequest\x1a\r.nc.TrisReply\"\x00\x12\x39\n\x10GetTrisAggStream\x12\x12.nc.TrisAggRequest\x1a\r.nc.TrisReply\"\x00\x30\x01\x42\x19\n\x07grpc.ncB\x07NCProtoP\x01\xa2\x02\x02NCb\x06proto3')
 )
 
 
@@ -69,6 +69,50 @@ _AGGVALUESPERLONREQUEST_OP = _descriptor.EnumDescriptor(
 )
 _sym_db.RegisterEnumDescriptor(_AGGVALUESPERLONREQUEST_OP)
 
+_MESHREQUEST_DOM = _descriptor.EnumDescriptor(
+  name='DOM',
+  full_name='nc.MeshRequest.DOM',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='DOM01', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DOM02', index=1, number=1,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=195,
+  serialized_end=222,
+)
+_sym_db.RegisterEnumDescriptor(_MESHREQUEST_DOM)
+
+_TRISREQUEST_DOM = _descriptor.EnumDescriptor(
+  name='DOM',
+  full_name='nc.TrisRequest.DOM',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='DOM01', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DOM02', index=1, number=1,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=195,
+  serialized_end=222,
+)
+_sym_db.RegisterEnumDescriptor(_TRISREQUEST_DOM)
+
 _TRISAGGREQUEST_OP = _descriptor.EnumDescriptor(
   name='Op',
   full_name='nc.TrisAggRequest.Op',
@@ -90,6 +134,28 @@ _TRISAGGREQUEST_OP = _descriptor.EnumDescriptor(
   serialized_end=247,
 )
 _sym_db.RegisterEnumDescriptor(_TRISAGGREQUEST_OP)
+
+_TRISAGGREQUEST_DOM = _descriptor.EnumDescriptor(
+  name='DOM',
+  full_name='nc.TrisAggRequest.DOM',
+  filename=None,
+  file=DESCRIPTOR,
+  values=[
+    _descriptor.EnumValueDescriptor(
+      name='DOM01', index=0, number=0,
+      serialized_options=None,
+      type=None),
+    _descriptor.EnumValueDescriptor(
+      name='DOM02', index=1, number=1,
+      serialized_options=None,
+      type=None),
+  ],
+  containing_type=None,
+  serialized_options=None,
+  serialized_start=195,
+  serialized_end=222,
+)
+_sym_db.RegisterEnumDescriptor(_TRISAGGREQUEST_DOM)
 
 _HEIGHTPROFILEREQUEST_DOM = _descriptor.EnumDescriptor(
   name='DOM',
@@ -242,11 +308,19 @@ _MESHREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='dom', full_name='nc.MeshRequest.dom', index=1,
+      number=2, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
+    _MESHREQUEST_DOM,
   ],
   serialized_options=None,
   is_extendable=False,
@@ -255,7 +329,7 @@ _MESHREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=287,
-  serialized_end=318,
+  serialized_end=381,
 )
 
 
@@ -292,8 +366,8 @@ _MESHREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=320,
-  serialized_end=359,
+  serialized_start=383,
+  serialized_end=422,
 )
 
 
@@ -325,11 +399,19 @@ _TRISREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='dom', full_name='nc.TrisRequest.dom', index=3,
+      number=4, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
+    _TRISREQUEST_DOM,
   ],
   serialized_options=None,
   is_extendable=False,
@@ -337,8 +419,8 @@ _TRISREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=361,
-  serialized_end=423,
+  serialized_start=424,
+  serialized_end=549,
 )
 
 
@@ -368,8 +450,8 @@ _TRISREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=425,
-  serialized_end=450,
+  serialized_start=551,
+  serialized_end=576,
 )
 
 
@@ -401,12 +483,20 @@ _TRISAGGREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='dom', full_name='nc.TrisAggRequest.dom', index=3,
+      number=4, type=14, cpp_type=8, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
     _TRISAGGREQUEST_OP,
+    _TRISAGGREQUEST_DOM,
   ],
   serialized_options=None,
   is_extendable=False,
@@ -414,8 +504,8 @@ _TRISAGGREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=452,
-  serialized_end=579,
+  serialized_start=579,
+  serialized_end=772,
 )
 
 
@@ -468,8 +558,8 @@ _HEIGHTPROFILEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=582,
-  serialized_end=793,
+  serialized_start=775,
+  serialized_end=986,
 )
 
 
@@ -499,8 +589,8 @@ _HEIGHTPROFILEREPLY = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=795,
-  serialized_end=850,
+  serialized_start=988,
+  serialized_end=1043,
 )
 
 
@@ -530,16 +620,22 @@ _PERHEIGHTDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=852,
-  serialized_end=881,
+  serialized_start=1045,
+  serialized_end=1074,
 )
 
 _AGGVALUESPERLONREQUEST.fields_by_name['dom'].enum_type = _AGGVALUESPERLONREQUEST_DOM
 _AGGVALUESPERLONREQUEST.fields_by_name['aggregateFunction'].enum_type = _AGGVALUESPERLONREQUEST_OP
 _AGGVALUESPERLONREQUEST_DOM.containing_type = _AGGVALUESPERLONREQUEST
 _AGGVALUESPERLONREQUEST_OP.containing_type = _AGGVALUESPERLONREQUEST
+_MESHREQUEST.fields_by_name['dom'].enum_type = _MESHREQUEST_DOM
+_MESHREQUEST_DOM.containing_type = _MESHREQUEST
+_TRISREQUEST.fields_by_name['dom'].enum_type = _TRISREQUEST_DOM
+_TRISREQUEST_DOM.containing_type = _TRISREQUEST
 _TRISAGGREQUEST.fields_by_name['aggregateFunction'].enum_type = _TRISAGGREQUEST_OP
+_TRISAGGREQUEST.fields_by_name['dom'].enum_type = _TRISAGGREQUEST_DOM
 _TRISAGGREQUEST_OP.containing_type = _TRISAGGREQUEST
+_TRISAGGREQUEST_DOM.containing_type = _TRISAGGREQUEST
 _HEIGHTPROFILEREQUEST.fields_by_name['dom'].enum_type = _HEIGHTPROFILEREQUEST_DOM
 _HEIGHTPROFILEREQUEST.fields_by_name['aggregateFunction'].enum_type = _HEIGHTPROFILEREQUEST_OP
 _HEIGHTPROFILEREQUEST_DOM.containing_type = _HEIGHTPROFILEREQUEST
@@ -636,8 +732,8 @@ _NCSERVICE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=884,
-  serialized_end=1245,
+  serialized_start=1077,
+  serialized_end=1438,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetHeightProfile',

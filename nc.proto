@@ -35,14 +35,15 @@ service NCService {
   rpc GetTrisAggStream (TrisAggRequest) returns (stream TrisReply) {}
 }
 
+
 message AggValuesPerLonRequest {
+  string filename = 1;
+  string variable = 2;
+  sint32 alt = 3;
   enum DOM {
       DOM01 = 0;
       DOM02 = 1;
   }
-  string filename = 1;
-  string variable = 2;
-  sint32 alt = 3;
   DOM dom = 4;
   enum Op{
       MEAN = 0;
@@ -57,6 +58,11 @@ message AggValuesPerLonReply {
 
 message MeshRequest {
   string filename = 1;
+  enum DOM {
+      DOM01 = 0;
+      DOM02 = 1;
+  }
+  DOM dom = 2;
 }
 
 message MeshReply {
@@ -68,6 +74,11 @@ message TrisRequest {
     string filename = 1;
     string variable = 2;
     sint32 alt = 3;
+    enum DOM {
+	DOM01 = 0;
+	DOM02 = 1;
+    }
+    DOM dom = 4;
 }
 
 message TrisReply {
@@ -83,6 +94,11 @@ message TrisAggRequest {
 	SUM = 1;
     }
     Op aggregateFunction = 3;
+    enum DOM {
+	DOM01 = 0;
+	DOM02 = 1;
+    }
+    DOM dom = 4;
 }
 
 message HeightProfileRequest {

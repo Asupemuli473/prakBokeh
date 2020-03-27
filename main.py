@@ -182,7 +182,7 @@ def cmapUpdate(attr, old, new):
     It is called if at property like the cmap is changed and the whole buildDynamicMap needs
     to be rebuild.
     """
-    mainDialog(False)
+    mainDialog(True)
 
 
 def aggDimUpdate(attr, old, new):
@@ -190,25 +190,25 @@ def aggDimUpdate(attr, old, new):
     if slAggregateFunction.value != "None":
         mainDialog(True)
     else:
-        mainDialog(False)
+        mainDialog(True)
 
 def aggFnUpdate(attr, old, new):
     global slAggregateDimension
     if slAggregateDimension.value != "None":
         mainDialog(True)
     else:
-        mainDialog(False)
+        mainDialog(True)
 
 def coastlineUpdate(new):
     logger.info("coastlineUpdate")
-    mainDialog(False)
+    mainDialog(True)
 
 def ColoringUpdate(new):
     logger.info("ColoringUpdate")
-    mainDialog(False)
+    mainDialog(True)
 
 def btApplyClick():
-    mainDialog(False)
+    mainDialog(True)
 
 def btClick():
     mainDialog(True)
@@ -340,7 +340,7 @@ def mainDialog(dataUpdate=True):
         else:
             if tmPlot is None:
                 logger.info("Build TriMeshPlot")
-                tmPlot = TriMeshPlot(url, heightDim, logger, renderer, xrDataMeta)
+                tmPlot = TriMeshPlot(url, heightDim, meshOptions[slMesh.value], logger, renderer, xrDataMeta)
             plot = tmPlot.getPlotObject(variable=variable,title=title,cm=cm,aggDim=aggDim,aggFn=aggFn, showCoastline=showCoastline, useFixColoring=useFixColoring, fixColoringMin=fixColorMin, fixColoringMax=fixColorMax,cSymmetric=cSymmetric,cLogZ=cLogZ,cLevels=cLevels,dataUpdate=dataUpdate)
 
         curdoc().clear()
@@ -367,7 +367,7 @@ def mainDialog(dataUpdate=True):
 
         curdoc().add_root(l)
         end = time.time()
-        logger.info("MainDialog took %d" % (end - start))
+        logger.info("MainDialog took %f" % (end - start))
     except Exception as e:
         print(e)
 

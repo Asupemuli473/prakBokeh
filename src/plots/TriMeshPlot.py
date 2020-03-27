@@ -29,12 +29,13 @@ MAX_MESSAGE_LENGTH = 16000000
 current_milli_time = lambda: int(round(time.time() * 1000))
 
 class TriMeshPlot(Plot):
-    def __init__(self, url, heightDim, logger, renderer, xrMetaData):
+    def __init__(self, url, heightDim, dom, logger, renderer, xrMetaData):
         """
         Overwrites Plot.__init__
         """
         self.url = url
         self.heightDim = heightDim
+        self.dom = dom
         self.logger = logger
         self.renderer = renderer
         self.xrMetaData = xrMetaData
@@ -160,14 +161,14 @@ class TriMeshPlot(Plot):
 
             if self.aggDim == "None" or self.aggFn == "None":
                 self.logger.info("No aggregation")
-                self.tris["var"] = self.stub.GetTris(nc_pb2.TrisRequest(filename=self.url, variable=self.variable, alt=selectors[self.heightDim])).data
+                self.tris["var"] = self.stub.GetTris(nc_pb2.TrisRequest(filename=self.url, variable=self.variable, alt=selectors[self.heightDim], dom=self.dom)).data
             else:
                 if self.aggFn == "mean":
                     self.logger.info("mean aggregation with %s" % self.aggDim)
-                    self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=0)).data
+                    self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=0, dom=self.dom)).data
                 elif self.aggFn == "sum":
                     self.logger.info("sum aggregation %s" % self.aggDim)
-                    self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=1)).data
+                    self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=1, dom=self.dom)).data
                 else:
                     self.logger.error("Unknown Error! AggFn not None, mean, sum")
 
