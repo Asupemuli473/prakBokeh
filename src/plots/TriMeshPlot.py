@@ -187,7 +187,7 @@ class TriMeshPlot(Plot):
             array of triangles and vertices: Builds the mesh from the loaded xrMetaData
         """
         start = current_milli_time()
-        response = self.stub.GetMesh(nc_pb2.MeshRequest(filename=self.url))
+        response = self.stub.GetMesh(nc_pb2.MeshRequest(filename=self.url, dom=self.dom))
         end = current_milli_time()
         self.logger.info("response took %f" % ((end - start) / 1000))
         verts = np.column_stack((response.lons, response.lats))

@@ -18,7 +18,6 @@
 #define NCELLS_DOM01 327680
 #define NCELLS_DOM02 135788
 #define NLATS 360
-#define NMESH 983040
 #define PI 3.14159
 #define HEIGHT_DIM_INDEX 1
 
@@ -199,11 +198,15 @@ public:
 	}
 
 	int ncells = request->dom() == nc::MeshRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
+	int nmesh = 3 * ncells;
 
+	std::cout << "test";
+
+	
 	netCDF::NcVar clons = ncFile.getVar("clon_bnds", netCDF::NcGroup::Current);
 	netCDF::NcVar clats = ncFile.getVar("clat_bnds", netCDF::NcGroup::Current);
 
-	std::vector<double> valuesLons(NMESH), valuesLats(NMESH);
+	std::vector<double> valuesLons(nmesh), valuesLats(nmesh);
 	std::vector<size_t> start(2), count(2);
 	count[0] = ncells;
 	count[1] = 1;
@@ -221,7 +224,7 @@ public:
 
 	double f = 180 / PI;
 	
-	for(int i = 0; i < NMESH; ++i){
+	for(int i = 0; i < nmesh; ++i){
 	    reply->add_lons(f * valuesLons[i]);
 	    reply->add_lats(f * valuesLats[i]);
 	}
