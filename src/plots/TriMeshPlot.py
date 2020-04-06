@@ -161,14 +161,14 @@ class TriMeshPlot(Plot):
 
             if self.aggDim == "None" or self.aggFn == "None":
                 self.logger.info("No aggregation")
-                self.tris["var"] = self.stub.GetTris(nc_pb2.TrisRequest(filename=self.url, variable=self.variable, alt=selectors[self.heightDim], dom=self.dom)).data
+                self.tris["var"] = self.stub.GetTris(nc_pb2.TrisRequest(filename=self.url, variable=self.variable, alt=selectors[self.heightDim], time=selectors['time'], dom=self.dom)).data
             else:
                 if self.aggFn == "mean":
                     self.logger.info("mean aggregation with %s" % self.aggDim)
                     self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=0, dom=self.dom)).data
                 elif self.aggFn == "sum":
                     self.logger.info("sum aggregation %s" % self.aggDim)
-                    self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=1, dom=self.dom)).data
+                    self.tris["var"] = self.stub.GetTrisAgg(nc_pb2.TrisAggRequest(filename=self.url, variable=self.variable, aggregateFunction=1, time=selectors['time'], dom=self.dom)).data
                 else:
                     self.logger.error("Unknown Error! AggFn not None, mean, sum")
 

@@ -19,7 +19,13 @@
 #define NCELLS_DOM02 135788
 #define NLATS 360
 #define PI 3.14159
+
+#define TIME_DIM_INDEX 0
 #define HEIGHT_DIM_INDEX 1
+#define NCELLS_DIM_INDEX 2
+
+#define NCELLS_DIM_INDEX_FOR_BNDS 0
+#define VERTICES_DIM_INDEX_FOR_BNDS 1
 
 #include <iostream>
 #include <fstream>
@@ -37,21 +43,9 @@
 #include "nc.grpc.pb.h"
 #endif
 
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::Status;
-using nc::AggValuesPerLonRequest;
-using nc::AggValuesPerLonReply;
-using nc::MeshRequest;
-using nc::MeshReply;
-using nc::TrisRequest;
-using nc::TrisReply;
-using nc::TrisAggRequest;
-using nc::NCService;
 
 // Logic and data behind the server's behavior.
-class ServiceImpl final : public NCService::Service {
+class ServiceImpl final : public nc::NCService::Service {
 private:
     std::vector<int> cellToLatLookupDOM01;
     std::vector<int> latCountDOM01;
@@ -96,13 +90,13 @@ public:
 	std::cout << "GRPC Server initialization complete" << std::endl;
     }
 
-    Status GetHeightProfile (ServerContext* context, const nc::HeightProfileRequest* request,
+    grpc::Status GetHeightProfile (grpc::ServerContext* context, const nc::HeightProfileRequest* request,
 			     nc::HeightProfileReply* reply) override {
 	netCDF::NcFile ncFile;
 	try {
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
-	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
+	    return grpc::Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
 	}
 
 	std::vector<int>* cellToLatLookup = request->dom() == nc::HeightProfileRequest_DOM_DOM01 ? &cellToLatLookupDOM01 : &cellToLatLookupDOM02;
@@ -117,11 +111,12 @@ public:
 	    
 	    // 3 dimensions
 	    std::vector<size_t> start(3);
+	    start[TIME_DIM_INDEX] = request->time();
 	    start[HEIGHT_DIM_INDEX] = i; // height
 	    std::vector<size_t> count(3);
-	    count[0] = 1;
-	    count[1] = 1;
-	    count[2] = ncells ;
+	    count[TIME_DIM_INDEX] = 1;
+	    count[HEIGHT_DIM_INDEX] = 1;
+	    count[NCELLS_DIM_INDEX] = ncells ;
     
 	    std::vector<float> values(ncells);
 	    var.getVar(start,count,&values[0]);
@@ -139,17 +134,17 @@ public:
 	}
     
 	ncFile.close();
-	return Status::OK;
+	return grpc::Status::OK;
     }
     
     
-    Status GetAggValuesPerLon(ServerContext* context, const AggValuesPerLonRequest* request,
-		    AggValuesPerLonReply* reply) override {
+    grpc::Status GetAggValuesPerLon(grpc::ServerContext* context, const nc::AggValuesPerLonRequest* request,
+		    nc::AggValuesPerLonReply* reply) override {
 	netCDF::NcFile ncFile;
 	try {
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
-	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
+	    return grpc::Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
 	}
 
 	int ncells = request->dom() == nc::AggValuesPerLonRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
@@ -158,11 +153,12 @@ public:
 
 	// 3 dimensions
 	std::vector<size_t> start(3);
-	start[1] = request->alt();
+	start[TIME_DIM_INDEX] = request->time();
+	start[HEIGHT_DIM_INDEX] = request->alt();
 	std::vector<size_t> count(3);
-	count[0] = 1;
-	count[1] = 1;
-	count[2] = ncells;
+	count[TIME_DIM_INDEX] = 1;
+	count[HEIGHT_DIM_INDEX] = 1;
+	count[NCELLS_DIM_INDEX] = ncells;
     
 	std::vector<float> values(ncells);
 	var.getVar(start,count,&values[0]);
@@ -184,17 +180,17 @@ public:
 
 	ncFile.close();
 
-	return Status::OK;
+	return grpc::Status::OK;
     }
 
-    Status GetMesh(ServerContext* context, const MeshRequest* request,
-		   MeshReply* reply) override {
+    grpc::Status GetMesh(grpc::ServerContext* context, const nc::MeshRequest* request,
+		   nc::MeshReply* reply) override {
 	netCDF::NcFile ncFile;
 	try {
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
-	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
+	    return grpc::Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
 	}
 
 	int ncells = request->dom() == nc::MeshRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
@@ -208,8 +204,8 @@ public:
 
 	std::vector<double> valuesLons(nmesh), valuesLats(nmesh);
 	std::vector<size_t> start(2), count(2);
-	count[0] = ncells;
-	count[1] = 1;
+	count[NCELLS_DIM_INDEX_FOR_BNDS] = ncells; 
+	count[VERTICES_DIM_INDEX_FOR_BNDS] = 1;
 
 	clons.getVar(start,count,&valuesLons[0]);
 	clats.getVar(start,count,&valuesLats[0]);
@@ -231,18 +227,18 @@ public:
 	
 	ncFile.close();
 
-	return Status::OK;
+	return grpc::Status::OK;
     }
 
 
-    Status GetTris (ServerContext* context, const TrisRequest* request,
-		    TrisReply* reply) override {
+    grpc::Status GetTris (grpc::ServerContext* context, const nc::TrisRequest* request,
+		    nc::TrisReply* reply) override {
 	netCDF::NcFile ncFile;
 	try {
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
-	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
+	    return grpc::Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
 	}
 
 	int ncells = request->dom() == nc::TrisRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
@@ -251,12 +247,14 @@ public:
 
 	std::vector<float> values(ncells);
 	std::vector<size_t> start(3);
-	start[1] = request->alt();
+	start[TIME_DIM_INDEX] = request->time();
+	start[HEIGHT_DIM_INDEX] = request->alt();
+
 
 	std::vector<size_t> count(3);
-	count[0] = 1;
-	count[1] = 1;
-	count[2] = ncells;
+	count[TIME_DIM_INDEX] = 1;
+	count[HEIGHT_DIM_INDEX] = 1;
+	count[NCELLS_DIM_INDEX] = ncells;
 
 	var.getVar(start,count,&values[0]);
 
@@ -264,17 +262,17 @@ public:
 	    reply->add_data(v);
 	}
 
-	return Status::OK;
+	return grpc::Status::OK;
     }
 
-    Status GetTrisAgg(ServerContext* context, const TrisAggRequest* request,
-		   TrisReply* reply) override {
+    grpc::Status GetTrisAgg(grpc::ServerContext* context, const nc::TrisAggRequest* request,
+		   nc::TrisReply* reply) override {
 	netCDF::NcFile ncFile;
 	try {
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
 	    std::cerr << "couldnt read file" << std::endl;
-	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
+	    return grpc::Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
 	}
 
 	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
@@ -283,11 +281,12 @@ public:
 	
 	std::vector<float> values(ncells);
 	std::vector<size_t> start(3);
+	start[TIME_DIM_INDEX] = request->time();
 	std::vector<size_t> count(3);
 
-	count[0] = 1;
+	count[TIME_DIM_INDEX] = 1;
 	count[HEIGHT_DIM_INDEX] = 1;
-	count[2] = ncells;
+	count[NCELLS_DIM_INDEX] = ncells;
 
 	std::vector<float> acc(ncells);
 	for(int i = 0; i < nheight; ++i){
@@ -306,63 +305,22 @@ public:
 
 	}
 
-	return Status::OK;
+	return grpc::Status::OK;
     }
-
-    Status GetTrisAggStream(ServerContext* context, const TrisAggRequest* request,
-			    grpc::ServerWriter<TrisReply>* writer) override {
-	netCDF::NcFile ncFile;
-	try {
-	    ncFile.open(request->filename(), netCDF::NcFile::read);
-	} catch(netCDF::exceptions::NcException &e) {
-	    std::cerr << "couldnt read file" << std::endl;
-	    return Status(grpc::StatusCode::NOT_FOUND, "Unable to read nc file");
-	}
-
-	netCDF::NcVar var = ncFile.getVar(request->variable(), netCDF::NcGroup::Current);
-	auto nheight = var.getDim(HEIGHT_DIM_INDEX).getSize();
-	int ncells = request->dom() == nc::TrisAggRequest_DOM_DOM01 ? NCELLS_DOM01 : NCELLS_DOM02;
-	
-	std::vector<float> values(nheight);
-	std::vector<size_t> start(3);
-	std::vector<size_t> count(3);
-	count[0] = 1;
-	count[HEIGHT_DIM_INDEX] = nheight;
-	count[2] = 1;
-
-	int bulk_size = 5000;
-	for(int i = 0; i < ncells; ++i){
-	    start[2] = i;
-	    var.getVar(start,count,&values[0]);
-	    auto acc = std::accumulate(values.begin(), values.end(), 0.0);
-	    if(request->aggregatefunction() == nc::TrisAggRequest_Op_MEAN){
-		acc /= nheight;
-	    }
-	    TrisReply reply = TrisReply();
-	    reply.add_data(acc);
-
-	    if(i % bulk_size == 0){
-		writer->Write(reply);
-	    }
-	}
-
-	return Status::OK;
-    }
-
 };
 
 void RunServer() {
     std::string server_address("0.0.0.0:50051");
     ServiceImpl service;
 
-    ServerBuilder builder;
+    grpc::ServerBuilder builder;
     // Listen on the given address without any authentication mechanism.
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
     // Register "service" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *synchronous* service.
     builder.RegisterService(&service);
     // Finally assemble the server.
-    std::unique_ptr<Server> server(builder.BuildAndStart());
+    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
     std::cout << "Server listening on " << server_address << std::endl;
 
     // Wait for the server to shutdown. Note that some other thread must be

@@ -31,25 +31,23 @@ service NCService {
   rpc GetTris (TrisRequest) returns (TrisReply) {}
 
   rpc GetTrisAgg (TrisAggRequest) returns (TrisReply) {}
-
-  rpc GetTrisAggStream (TrisAggRequest) returns (stream TrisReply) {}
 }
-
 
 message AggValuesPerLonRequest {
   string filename = 1;
   string variable = 2;
   sint32 alt = 3;
+  sint32 time = 4;
   enum DOM {
       DOM01 = 0;
       DOM02 = 1;
   }
-  DOM dom = 4;
+  DOM dom = 5;
   enum Op{
       MEAN = 0;
       SUM = 1;
   }
-  Op aggregateFunction = 5;
+  Op aggregateFunction = 6;
 }
 
 message AggValuesPerLonReply {
@@ -74,11 +72,12 @@ message TrisRequest {
     string filename = 1;
     string variable = 2;
     sint32 alt = 3;
+    sint32 time = 4;
     enum DOM {
 	DOM01 = 0;
 	DOM02 = 1;
     }
-    DOM dom = 4;
+    DOM dom = 5;
 }
 
 message TrisReply {
@@ -89,31 +88,33 @@ message TrisReply {
 message TrisAggRequest {
     string filename = 1;
     string variable = 2;
-    enum Op {
-	MEAN = 0;
-	SUM = 1;
-    }
-    Op aggregateFunction = 3;
-    enum DOM {
-	DOM01 = 0;
-	DOM02 = 1;
-    }
-    DOM dom = 4;
-}
-
-message HeightProfileRequest {
-    string filename = 1;
-    string variable = 2;
-    enum DOM {
-	DOM01 = 0;
-	DOM02 = 1;
-    }
-    DOM dom = 3;
+    sint32 time = 3;
     enum Op {
 	MEAN = 0;
 	SUM = 1;
     }
     Op aggregateFunction = 4;
+    enum DOM {
+	DOM01 = 0;
+	DOM02 = 1;
+    }
+    DOM dom = 5;
+}
+
+message HeightProfileRequest {
+    string filename = 1;
+    string variable = 2;
+    sint32 time = 3;
+    enum DOM {
+	DOM01 = 0;
+	DOM02 = 1;
+    }
+    DOM dom = 4;
+    enum Op {
+	MEAN = 0;
+	SUM = 1;
+    }
+    Op aggregateFunction = 5;
 }
 
 message HeightProfileReply {

@@ -68,9 +68,9 @@ class CurvePlot(Plot):
             self.logger.info("Loading data")
 
             if self.aggDim == "lat" and self.aggFn == "mean":
-                self.dat = self.stub.GetAggValuesPerLon(nc_pb2.AggValuesPerLonRequest(filename=self.url, variable=self.variable, alt=int(selectors[self.heightDim]), dom=self.dom, aggregateFunction=0)).data
+                self.dat = self.stub.GetAggValuesPerLon(nc_pb2.AggValuesPerLonRequest(filename=self.url, variable=self.variable, alt=int(selectors[self.heightDim]), time=int(selectors['time']), dom=self.dom, aggregateFunction=0)).data
             elif self.aggDim == "lat" and self.aggFn == "sum":
-                self.dat = self.stub.GetAggValuesPerLon(nc_pb2.AggValuesPerLonRequest(filename=self.url, variable=self.variable, alt=int(selectors[self.heightDim]), dom=self.dom, aggregateFunction=1)).data     
+                self.dat = self.stub.GetAggValuesPerLon(nc_pb2.AggValuesPerLonRequest(filename=self.url, variable=self.variable, alt=int(selectors[self.heightDim]), time=int(selectors['time']),dom=self.dom, aggregateFunction=1)).data     
             self.logger.info("Loaded data")
 
         # TODO Apply unit

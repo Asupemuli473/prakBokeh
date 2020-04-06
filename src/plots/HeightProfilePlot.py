@@ -85,9 +85,9 @@ class HeightProfilePlot(Plot):
         if self.dataUpdate == True:
             reponse = 0;
             if self.aggFn == "mean":
-                response = self.stub.GetHeightProfile(nc_pb2.HeightProfileRequest(filename=self.url, variable=self.variable, dom=self.dom, aggregateFunction=0))     
+                response = self.stub.GetHeightProfile(nc_pb2.HeightProfileRequest(filename=self.url, variable=self.variable, time=selectors['time'], dom=self.dom, aggregateFunction=0))     
             elif self.aggFn == "sum":
-                response = self.stub.GetHeightProfile(nc_pb2.HeightProfileRequest(filename=self.url, variable=self.variable, dom=self.dom, aggregateFunction=1))
+                response = self.stub.GetHeightProfile(nc_pb2.HeightProfileRequest(filename=self.url, variable=self.variable, time=selectors['time'], dom=self.dom, aggregateFunction=1))
             self.dat = [response.result[i].data for i in range(0,len(response.result))]
 
         # TODO Apply unit

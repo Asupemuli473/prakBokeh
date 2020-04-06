@@ -33,10 +33,7 @@ logging.basicConfig(format=FORMAT)
 logger = logging.getLogger('ncview2')
 logger.info({i.__name__:i.__version__ for i in [hv, np, pd]})
 
-
-defaultinput = "http://eos.scc.kit.edu/thredds/dodsC/localpolstracc/2016020100/2016020100-ART-chemtracer_grid_DOM01_ML_0018.nc"
-#defaultinput = "eos.scc.kit.edu"
-defaultinput = "/home/tom/Documents/nc_files/2016020100-ART-chemtracer_grid_DOM01_ML_0018.nc"
+defaultinput = "/home/tom/Documents/nc_files/2016032400-ART-chemtracer_grid_DOM02_PL_0001.nc"
 
 urlinput = TextInput(value=defaultinput, title="netCDF file -OR- OPeNDAP URL:")
 slVar = None
@@ -182,7 +179,7 @@ def cmapUpdate(attr, old, new):
     It is called if at property like the cmap is changed and the whole buildDynamicMap needs
     to be rebuild.
     """
-    mainDialog(True)
+    mainDialog(False) 
 
 
 def aggDimUpdate(attr, old, new):
@@ -190,25 +187,25 @@ def aggDimUpdate(attr, old, new):
     if slAggregateFunction.value != "None":
         mainDialog(True)
     else:
-        mainDialog(True)
+        mainDialog(False)
 
 def aggFnUpdate(attr, old, new):
     global slAggregateDimension
     if slAggregateDimension.value != "None":
         mainDialog(True)
     else:
-        mainDialog(True)
+        mainDialog(False)
 
 def coastlineUpdate(new):
     logger.info("coastlineUpdate")
-    mainDialog(True)
+    mainDialog(False)
 
 def ColoringUpdate(new):
     logger.info("ColoringUpdate")
-    mainDialog(True)
+    mainDialog(False)
 
 def btApplyClick():
-    mainDialog(True)
+    mainDialog(False)
 
 def btClick():
     mainDialog(True)
