@@ -93,6 +93,7 @@ public:
     grpc::Status GetHeightProfile (grpc::ServerContext* context, const nc::HeightProfileRequest* request,
 			     nc::HeightProfileReply* reply) override {
 	netCDF::NcFile ncFile;
+	std::cout << "HI" << std::endl;
 	try {
 	    ncFile.open(request->filename(), netCDF::NcFile::read);
 	} catch(netCDF::exceptions::NcException &e) {
@@ -128,7 +129,11 @@ public:
 	    }
 
 	    for(int i = 0; i < NLATS; ++i){
-		auto val = nc::HeightProfileRequest_Op_MEAN == request->aggregatefunction() ? data[i] / (*latCountLookup)[i] : data[i];
+		float val = 0.f;
+		if((*latCountLookup)[i] != 0){
+		    val = nc::HeightProfileRequest_Op_MEAN == request->aggregatefunction() ? data[i] / (*latCountLookup)[i] : data[i];		    
+		}
+
 		hd->add_data(val);
 	    }
 	}
@@ -174,7 +179,11 @@ public:
 
 	
 	for(int i = 0; i < NLATS; ++i){
-	    auto val = nc::AggValuesPerLonRequest_Op_MEAN == request->aggregatefunction() ? data[i] / (*latCountLookup)[i] : data[i];
+	    float val = 0.f;
+	    if((*latCountLookup)[i] != 0){
+		val = nc::AggValuesPerLonRequest_Op_MEAN == request->aggregatefunction() ? data[i] / (*latCountLookup)[i] : data[i];		
+	    }
+
 	    reply->add_data(val);
 	}
 
