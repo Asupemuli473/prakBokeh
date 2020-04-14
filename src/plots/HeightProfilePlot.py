@@ -54,10 +54,15 @@ class HeightProfilePlot(Plot):
 
         if "hi" in self.freeDims:
             self.freeDims.remove("hi")
+        if "lev" in self.freeDims:
+            self.freeDims.remove("lev")
+        if "alt" in self.freeDims:
+            self.freeDims.remove("alt")
+
         if len(self.freeDims) > 0:
             self.logger.info("Show with DynamicMap")
             dm = hv.DynamicMap(self.buildHeightProfilePlot, kdims=self.freeDims).redim.range(**ranges)
-            return self.renderer.get_plot(dm.opts(**totalgraphopts))
+            return self.renderer.get_widget(dm.opts(**totalgraphopts), 'widget')
         else:
             # This is needed as DynamicMap is not working with an empty kdims array.
             self.logger.info("Show without DynamicMap")
